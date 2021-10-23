@@ -1,0 +1,3 @@
+[submodule "users/dotfiles"]
+	path = users/dotfiles
+	url = ./users/dotfiles
