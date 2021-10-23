@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+
+function fail {
+    echo "Error:" "$@"
+    exit 1
+} 1>&2
+
+
+DIR="${1:-.}"
+DOTFILES_ORIGIN="${2:-/etc/nixos/users/dotfiles}"
+
+cd "$DIR"
+[ -e .dotfiles ] && fail "$DIR/.dotfiles already exists!"
+
+chmod -v og-rwx "$DIR"
+
+# Arrange for the Git repository directory to be .dotfiles instead of .git, to
+# avoid seeing $DIR (e.g. $HOME) by default as a repository.
+git clone --bare "$DOTFILES_ORIGIN" .dotfiles
+git --git-dir=.dotfiles --work-tree=. checkout -b user/"$USER" main
+
+# TODO: install home-manager for user and do `home-manager switch`.
