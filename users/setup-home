@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 
-set -o errexit
-set -o nounset
+set -o errexit -o nounset
 
 function fail {
     echo "Error:" "$@"
@@ -19,7 +18,8 @@ chmod -v og-rwx "$DIR"
 
 # Arrange for the Git repository directory to be .dotfiles instead of .git, to
 # avoid seeing $DIR (e.g. $HOME) by default as a repository.
-git clone --bare "$DOTFILES_ORIGIN" .dotfiles
-git --git-dir=.dotfiles --work-tree=. checkout -b user/"$USER" main
+git clone --separate-git-dir=.dotfiles "$DOTFILES_ORIGIN" .
+git checkout -b user/"$USER" --no-track
+mv -v .git .git-hidden
 
 # TODO: install home-manager for user and do `home-manager switch`.

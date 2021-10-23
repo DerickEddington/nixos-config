@@ -122,13 +122,17 @@
   nixpkgs.config.allowUnfree = true;
 
   environment = let
-    emacsWithPackages = (import ./emacs.nix { inherit pkgs; });
+    with-unhidden-gitdir = import ./users/with-unhidden-gitdir.nix { inherit pkgs; };
+    emacsWithPackages = import ./emacs.nix { inherit pkgs; };
   in {
     # List packages installed in system profile. To search, run:
     # $ nix search wget
-    systemPackages = with pkgs; [
-      lsb-release
+    systemPackages = [
+      with-unhidden-gitdir
       emacsWithPackages
+    ]
+    ++ (with pkgs; [
+      lsb-release
       most
       wget
       htop
@@ -141,7 +145,7 @@
       firefox
       libreoffice
       rhythmbox
-    ];
+    ]);
 
     variables = rec {
       # Use absolute paths for these, in case some usage does not use PATH.
