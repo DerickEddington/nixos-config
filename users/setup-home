@@ -1,25 +1,69 @@
 #!/usr/bin/env bash
-
 set -o errexit -o nounset
+
+# This script sets-up the home directory of a newly-created user.  It is
+# intended to be run, by the new user, only once when the new home directory is
+# empty.  Normally, it is run with the current working directory being the new
+# $HOME, but it could be run in any directory.
+#
+# E.g., after a new user has been added in /etc/nixos/configuration.nix, root
+# should do:
+#   # passwd $NEW_USER
+#   # su -l $NEW_USER
+#   $ /etc/nixos/users/setup-home
+#   $ logout
 
 function fail {
     echo "Error:" "$@"
     exit 1
 } 1>&2
 
+function assert-nonexistent {
+    local F="$DIR/$1"
+    [ ! -e "$F" ] || fail "$F already exists!"
+}
+
+function assert-all-nonexistent {
+    local F
+    while F="${1:-}"; shift; do
+        assert-nonexistent "$F"
+    done
+}
+
 
 DIR="${1:-.}"
 DOTFILES_ORIGIN="${2:-/etc/nixos/users/dotfiles}"
 
 cd "$DIR"
-[ -e .dotfiles ] && fail "$DIR/.dotfiles already exists!"
+# Basic sanity check.  Non-exhaustive since the checkout of the DOTFILES_ORIGIN
+# will try to create other files that also should not exist yet.
+assert-all-nonexistent .dotfiles .git .git-hidden .config/nixpkgs/home.nix
 
 chmod -v og-rwx "$DIR"
 
-# Arrange for the Git repository directory to be .dotfiles instead of .git, to
-# avoid seeing $DIR (e.g. $HOME) by default as a repository.
-git clone --separate-git-dir=.dotfiles "$DOTFILES_ORIGIN" .
-git checkout -b user/"$USER" --no-track
-mv -v .git .git-hidden
+# Populate the user's home-directory with the system-wide dot-files "skeleton"
+# by cloning the repository.  Arrange for the Git directory to be .dotfiles
+# instead of .git, to avoid seeing $DIR (e.g. $HOME) by default as a repository.
+{
+    git clone --separate-git-dir=.dotfiles "$DOTFILES_ORIGIN" .
+    git checkout -b user/"$USER" --no-track
+    mv -v .git .git-hidden
+}
 
-# TODO: install home-manager for user and do `home-manager switch`.
+# Install home-manager per user and activate.  The dot-files installed above
+# provide a premade .config/nixpkgs/home.nix file.
+{
+    [[ "$(nixos-version)" =~ ^([[:digit:]]+\.[[:digit:]]+) ]]  # errexit on fail
+    NIXOS_RELEASE="${BASH_REMATCH[1]}"
+    HOMEMANAGER_URL="https://github.com/nix-community/home-manager/archive/release-$NIXOS_RELEASE.tar.gz"
+
+    nix-channel --add "$HOMEMANAGER_URL" home-manager
+    nix-channel --update
+
+    export NIX_PATH="$HOME/.nix-defexpr/channels${NIX_PATH:+:}$NIX_PATH"
+
+    nix-shell '<home-manager>' -A install
+
+    # # Dump its news now so it will be quiet about this after.
+    # home-manager news > /dev/null
+}
