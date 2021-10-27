@@ -40,4 +40,15 @@
       { devices = [ "/dev/disk/by-id/nvme-eui.d3e81d22e1499541aea81b4fa99b2d8c" ] ; efiSysMountPoint = "/boot/efis/nvme-eui.d3e81d22e1499541aea81b4fa99b2d8c-part1"; path = "/boot"; }
     ];
   };
+
+  # ZFS does not support hibernation and so it must not be done.  (But suspend
+  # is safe and allowed.)
+  # https://nixos.wiki/wiki/ZFS
+  # https://github.com/openzfs/zfs/issues/260
+  boot.kernelParams = [ "nohibernate" ];
+
+  services.zfs = {
+    trim.enable = true;
+    autoScrub.enable = true;
+  };
 }
