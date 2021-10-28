@@ -2,7 +2,7 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   imports = [
@@ -118,8 +118,18 @@
     ];
   };
 
-  # Allow and show "unfree" packages that are available.
-  nixpkgs.config.allowUnfree = true;
+  nixpkgs.config = {
+    # Note that `NIXPKGS_ALLOW_UNFREE=1 nix-env -qa` can be used to see all
+    # "unfree" packages without allowing permanently.
+
+    # Allow and show all "unfree" packages that are available.
+    # allowUnfree = true;
+
+    # Allow and show only select "unfree" packages.
+    allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+      # "${name}"
+    ];
+  };
 
   environment = let
     with-unhidden-gitdir = import ./users/with-unhidden-gitdir.nix { inherit pkgs; };
