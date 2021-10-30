@@ -16,7 +16,6 @@
 
   i18n.defaultLocale = "en_US.UTF-8";
 
-  # Set your time zone.
   time.timeZone = "America/Los_Angeles";
 
   console = {
@@ -36,12 +35,12 @@
     };
   in {
     boss = common // {
-      extraGroups = [ "wheel" "networkmanager" "vboxsf" ];
+      extraGroups = [ "wheel" "networkmanager" ];
     };
   };
 
   networking = {
-    hostName = "yuiop"; # Define your hostname.
+    hostName = "shape";
     # wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
     networkmanager = {
