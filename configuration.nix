@@ -19,12 +19,13 @@
   time.timeZone = "America/Los_Angeles";
 
   console = {
+    # earlySetup = true;
     packages = with pkgs; [
       terminus_font
     ];
-    # TODO: Is this one taking effect? There is no error when it's wrong...
-    font = "ter-x24b";  # TerminusBold 12x24
-    keyMap = "us";
+    font = "ter-v32n";
+    useXkbConfig = true;
+    # keyMap = "us";
   };
 
   # Don't forget to set a password with `passwd` for each user, and then run, as
@@ -83,7 +84,7 @@
 
       # Configure keymap in X11
       layout = "us";
-      xkbOptions = "caps:ctrl_modifier";
+      xkbOptions = "ctrl:nocaps";
 
       # Enable touchpad support (enabled default in most desktopManager).
       libinput.enable = true;
