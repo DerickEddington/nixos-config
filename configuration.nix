@@ -9,6 +9,11 @@
     ./hardware-configuration-zfs.nix ./zfs.nix
   ];
 
+  boot = {
+    cleanTmpDir = true;
+    # tmpOnTmpfs = true;
+  };
+
   i18n.defaultLocale = "en_US.UTF-8";
 
   # Set your time zone.
