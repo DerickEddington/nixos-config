@@ -28,8 +28,9 @@
     # keyMap = "us";
   };
 
-  # Don't forget to set a password with `passwd` for each user, and then run, as
-  # the user, `/etc/nixos/users/setup-home`.
+  # Don't forget to set a password with `passwd` for each user, and possibly
+  # setup a new ZFS dataset for their home, and then run, as the user,
+  # `/etc/nixos/users/setup-home`.
   users.users = let
     common = {
       isNormalUser = true;
@@ -38,6 +39,7 @@
     boss = common // {
       extraGroups = [ "wheel" "networkmanager" ];
     };
+    d = common;
   };
 
   networking = {
