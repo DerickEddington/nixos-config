@@ -157,9 +157,23 @@
       ripgrep
       file
       screen
+    ]) ++ (if config.services.xserver.enable then (with pkgs; [
+      # TODO: Only have the ones that I keep using.
+      bibata-cursors
+      bibata-extra-cursors
+      capitaine-cursors
+      numix-cursor-theme
+      openzone-cursors
+      xorg.xcursorthemes
+      pop-icon-theme
+      materia-theme
+      material-icons
+      material-design-icons
+    ]) ++ (if config.services.xserver.desktopManager.mate.enable then (with pkgs; [
+      mate.mate-icon-theme-faenza
       libreoffice
       rhythmbox
-    ]);
+    ]) else []) else []);
 
     variables = rec {
       # Use absolute paths for these, in case some usage does not use PATH.
