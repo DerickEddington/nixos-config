@@ -10,7 +10,9 @@
   boot.initrd.availableKernelModules = [ "nvme" "xhci_pci" "ahci" "usb_storage" "sd_mod" ];
   boot.initrd.kernelModules = [ ];
   boot.kernelModules = [ "kvm-amd" ];
-  boot.extraModulePackages = [ ];
+  boot.extraModulePackages = (with pkgs; [
+    linuxPackages.tuxedo-keyboard
+  ]);
 
   fileSystems."/" =
     { device = "main-1z9h4t/shape";
