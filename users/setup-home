@@ -50,6 +50,18 @@ chmod -v og-rwx "$DIR"
     mv -v .git .git-hidden
 }
 
+# The .dotfiles repository provides .config/user-dirs.dirs but the directories
+# which that declares do not exist yet, and the presence of that file would
+# cause the xdg-user-dirs-update invocations at session logins to change the
+# file to not declare non-existent directories, which is not what we want.  To
+# avoid that, invoke xdg-user-dirs-update once with the files being absent so it
+# will create the default directories along with recreating the files, which is
+# what we want and which matches the tracked content of those files.
+{
+    rm -f .config/user-dirs.*
+    xdg-user-dirs-update
+}
+
 # Install home-manager per user and activate.  The dot-files installed above
 # provide a premade .config/nixpkgs/home.nix file.
 {
