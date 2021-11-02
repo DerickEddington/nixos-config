@@ -23,7 +23,7 @@
     packages = with pkgs; [
       terminus_font
     ];
-    font = "ter-v32n";
+    font = "ter-v24n";
     useXkbConfig = true;
     # keyMap = "us";
   };
