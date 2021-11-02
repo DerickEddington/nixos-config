@@ -43,7 +43,12 @@
   # is safe and allowed.)
   # https://nixos.wiki/wiki/ZFS
   # https://github.com/openzfs/zfs/issues/260
-  boot.kernelParams = [ "nohibernate" ];
+  boot.kernelParams = [
+    "nohibernate"
+    "tuxedo_keyboard.state=0"              # backlight off
+    "tuxedo_keyboard.brightness=25"        # low, if turned on
+    "tuxedo_keyboard.color_left=0xff0000"  # red, if turned on
+  ];
 
   services.zfs = {
     trim.enable = true;
