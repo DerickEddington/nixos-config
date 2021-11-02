@@ -107,6 +107,12 @@ in
       options = [ "bind" ];
     };
 
+  # TODO: Will not want to keep this, for users with encrypted home auto-mounted by PAM.
+  fileSystems."/home/d" =
+    { device = "main-1z9h4t/shape/home/d";
+      fsType = "zfs"; options = [ "zfsutil" ];
+    };
+
   fileSystems."/boot/efis/nvme-Samsung_SSD_970_EVO_Plus_2TB_S59CNM0R706239E-part2" =
     { device = "/dev/disk/by-uuid/9BC0-C3BF";
       fsType = "vfat"; options = [ "x-systemd.idle-timeout=1min" "x-systemd.automount" "noauto" ];
