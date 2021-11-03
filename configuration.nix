@@ -187,7 +187,7 @@
       # referenced anywhere and were removed on GC, but it is convenient.
       automatic = true;
       dates = "weekly";
-      options = "--delete-older-than 30d";
+      options = "--delete-older-than 90d";
     };
   };
 
