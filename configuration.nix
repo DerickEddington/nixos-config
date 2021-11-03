@@ -6,7 +6,11 @@
 
 {
   imports = [
-    ./hardware-configuration-zfs.nix ./zfs.nix
+    # Parameterize for the particular host machine.
+    (let hostName = "shape";
+     in ./per-host + "/${hostName}")
+
+    ./hardware-configuration-zfs.nix
   ];
 
   boot = {
@@ -16,14 +20,11 @@
 
   i18n.defaultLocale = "en_US.UTF-8";
 
-  time.timeZone = "America/Los_Angeles";
-
   console = {
     # earlySetup = true;
     packages = with pkgs; [
       terminus_font
     ];
-    font = "ter-v24n";
     useXkbConfig = true;
     # keyMap = "us";
   };
@@ -43,7 +44,6 @@
   };
 
   networking = {
-    hostName = "shape";
     # wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
     networkmanager = {
@@ -69,12 +69,6 @@
       # enable = false;
     };
   };
-
-  # hardware.video.hidpi.enable = true;  # TODO? Maybe try with 21.11. Was broken with 21.05
-
-  # Enable sound.
-  sound.enable = true;
-  hardware.pulseaudio.enable = true;
 
   services = {
     # openssh.enable = true;
