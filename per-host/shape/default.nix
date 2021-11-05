@@ -4,9 +4,6 @@
 
 with builtins;
 
-let
-  hostName = "shape";
-in
 {
   imports = [
     ./hardware-configuration.nix
@@ -22,22 +19,25 @@ in
        ext-tcc.module)
   ];
 
-  _module.args.mine.perHost.${hostName} = rec {
+  # Define this again here to ensure it is checked that this is the same as what
+  # /etc/nixos/configuration.nix also defined for the same option.
+  my.hostName = "shape";
+
+  my.zfs = {
     mirrorDrives = [  # Names under /dev/disk/by-id/
       "nvme-Samsung_SSD_970_EVO_Plus_2TB_S59CNM0R706239E"
       "nvme-Samsung_SSD_970_EVO_Plus_2TB_S59CNM0R706236Y"
     ];
-    firstDrive = elemAt mirrorDrives 0;
     partitions = {
       legacyBIOS = 1;
-      EFI = 2;
-      boot = 3;
-      main = 4;
-      swap = 5;
+      EFI        = 2;
+      boot       = 3;
+      main       = 4;
+      swap       = 5;
     };
     pools = let id = "1z9h4t"; in {
-      boot = "boot-${id}";
-      main = "main-${id}";
+      boot.name = "boot-${id}";
+      main.name = "main-${id}";
     };
   };
 
@@ -57,10 +57,7 @@ in
     ];
   };
 
-  networking = {
-    inherit hostName;
-    hostId = "7b92cf39";
-  };
+  networking.hostId = "7b92cf39";
 
   time.timeZone = "America/Los_Angeles";
 
