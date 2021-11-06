@@ -69,6 +69,10 @@ with builtins;
   sound.enable = true;
   hardware.pulseaudio.enable = true;
 
+  # Bluetooth
+  hardware.bluetooth.enable = true;
+  services.blueman.enable = true;
+
   # Drivers from Tuxedo Computers that also work on my Clevo NH55EJQ.
   hardware.tuxedo-keyboard.enable = true;  # Also enabled by the next below.
   hardware.tuxedo-control-center.enable = true;
