@@ -50,6 +50,16 @@ with builtins;
       # grub.efiInstallAsRemovable = true;
       # efi.canTouchEfiVariables = false;
     };
+
+    # Use the latest stable kernel, instead of the default LTS one.
+    kernelPackages = pkgs.linuxPackages_latest;
+    # Following https://nixos.wiki/wiki/Linux_kernel --
+    # Note that if you deviate from the default kernel version, you should also
+    # take extra care that extra kernel modules must match the same version. The
+    # safest way to do this is to use config.boot.kernelPackages to select the
+    # correct module set:
+    extraModulePackages = with config.boot.kernelPackages; [ ];
+
     kernelParams = [
       "tuxedo_keyboard.state=0"              # backlight off
       "tuxedo_keyboard.brightness=25"        # low, if turned on
