@@ -73,6 +73,8 @@ with builtins;
 
   console.font = "ter-v24n";
 
+  hardware.cpu.amd.updateMicrocode = true;
+
   # hardware.video.hidpi.enable = true;  # TODO? Maybe try with 21.11. Was broken with 21.05
 
   # Enable sound.
