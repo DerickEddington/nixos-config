@@ -227,11 +227,10 @@ in
           (efiMountSpecs mirrorDrives)
         ];
 
-    # TODO: See if can set swapDevices.*.priority to be equal for both.  Would
-    #       that result in faster stripping of writes/reads when swap is used?
     swapDevices =
       if partitions.swap != null then
         (map (drive: { device = "/dev/disk/by-id/${drive}-part${toString partitions.swap}";
+                       priority = 1;
                        randomEncryption.enable = true; })
              mirrorDrives)
       else [];
