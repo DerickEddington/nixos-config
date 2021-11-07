@@ -154,6 +154,8 @@ in
       ]
       ++ (with pkgs; [
         lsb-release
+        man-pages
+        man-pages-posix
         most
         wget
         htop
