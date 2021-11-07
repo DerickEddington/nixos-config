@@ -67,7 +67,22 @@ with builtins;
     ];
   };
 
-  networking.hostId = "7b92cf39";
+  networking = {
+    hostId = "7b92cf39";
+
+    # # TODO: Might be needed to work with my router's MAC filter.  Though, the
+    # # default of macAddress="preserve" might work once it has connected once
+    # # (with the MAC filter disabled temporarily), and the default
+    # # scanRandMacAddress=true might be ok since it sounds like it only affects
+    # # scanning but not "preserve"d MAC address of previously-connected
+    # # connections.
+    # networkmanager = {
+    #   wifi = {
+    #     scanRandMacAddress = false;
+    #     macAddress = "permanent";
+    #   };
+    # };
+  };
 
   time.timeZone = "America/Los_Angeles";
 
@@ -88,4 +103,7 @@ with builtins;
   # Drivers from Tuxedo Computers that also work on my Clevo NH55EJQ.
   hardware.tuxedo-keyboard.enable = true;  # Also enabled by the next below.
   hardware.tuxedo-control-center.enable = true;
+
+  # TODO: Enable this once my /etc/nixos/configuration.nix stays constant.
+  # system.autoUpgrade.enable = true;
 }
