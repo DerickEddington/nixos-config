@@ -49,6 +49,7 @@ in
         extraGroups = [ "wheel" "networkmanager" ];
       };
       d = common;
+      z = common;
     };
 
     networking = {

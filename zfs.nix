@@ -217,6 +217,7 @@ in
                    "/var/tmp"
                    # TODO: Will not want to keep this, for users with encrypted home auto-mounted by PAM.
                    "/home/d"
+                   "/home/z"
            ])))
 
           (stateBindMountSpecs [
