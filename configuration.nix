@@ -147,6 +147,18 @@ in
       with-unhidden-gitdir = import ./users/with-unhidden-gitdir.nix { inherit pkgs; };
       myEmacs = import ./emacs.nix { inherit pkgs; };
       myFirefox = import ./firefox.nix { inherit pkgs; };
+      # TODO: Until comixcursors is in pkgs, must use my external package.  Once
+      #       it is in pkgs, this variable and its uses should be deleted and
+      #       pkgs.comixcursors used instead.
+      comixcursors = assert ! (let nixpkgs = import <nixpkgs> {}; in nixpkgs ? comixcursors);
+                     pkgs.callPackage (fetchGit https://github.com/DerickEddington/nix-comixcursors.git) {};
+      # Reduced set of the Comix Cursors variants (don't want all of them).
+      comixcursorsChosen =
+        map ({color, hand}: comixcursors."${hand}Opaque_${color}")
+          (lib.attrsets.cartesianProductOfSets {
+            color = [ "Blue" "Green" "Orange" "Red" ];
+            hand = [ "" "LH_" ];
+          });
     in {
       systemPackages = [
         with-unhidden-gitdir
@@ -166,14 +178,10 @@ in
         ripgrep
         file
         screen
-      ]) ++ (if config.services.xserver.enable then (with pkgs; [
+      ]) ++ (if config.services.xserver.enable then
+        comixcursorsChosen
+        ++ (with pkgs; [
         # TODO: Only have the ones that I keep using.
-        bibata-cursors
-        bibata-extra-cursors
-        capitaine-cursors
-        numix-cursor-theme
-        openzone-cursors
-        xorg.xcursorthemes
         pop-icon-theme
         materia-theme
         material-icons
