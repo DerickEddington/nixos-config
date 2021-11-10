@@ -3,9 +3,12 @@
 
 { config, pkgs, lib, ... }:
 
-with builtins;
-with lib;
-with lists;
+let
+  inherit (builtins) all attrValues catAttrs elem elemAt length listToAttrs match pathExists;
+  inherit (lib) mkMerge mkOption types;
+  inherit (lib.lists) unique;
+  inherit (lib.attrsets) filterAttrs;
+in
 
 let
   allUnique = list: list == unique list;
@@ -80,7 +83,7 @@ in
         # Only the boot and main partitions are allowed to be the same, but the
         # others must all be unique.
         uniquePartitions = { partitions, ... }:
-          let p = attrsets.filterAttrs (n: v: v != null) partitions;
+          let p = filterAttrs (n: v: v != null) partitions;
               distinctPartitionsNums = attrValues (if p.boot == p.main then removeAttrs p ["boot"] else p);
           in allUnique distinctPartitionsNums;
 
