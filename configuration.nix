@@ -55,29 +55,9 @@ in
     networking = {
       hostName = config.my.hostName;
 
-      # wireless.enable = true;  # Enables wireless support via wpa_supplicant.
-
       networkmanager = {
         enable = true;
         wifi.powersave = true;
-      };
-
-      # The global useDHCP flag is deprecated, therefore explicitly set to false here.
-      # Per-interface useDHCP will be mandatory in the future, so this generated config
-      # replicates the default behaviour.
-      # useDHCP = false;
-      # interfaces.enp0s3.useDHCP = true;
-
-      # Configure network proxy if necessary
-      # proxy.default = "http://user:password@proxy:port/";
-      # proxy.noProxy = "127.0.0.1,localhost,internal.domain";
-
-      firewall = {
-        # Open ports in the firewall.
-        # allowedTCPPorts = [ 22 ];
-        # allowedUDPPorts = [ ... ];
-        # Or disable the firewall altogether.
-        # enable = false;
       };
     };
 
@@ -96,9 +76,6 @@ in
         # Enable touchpad support (enabled default in most desktopManager).
         libinput.enable = true;
         libinput.touchpad.tapping = false;
-
-        # Firefox doesn't honor, but MATE would.
-        # dpi = 110;
 
         desktopManager.mate.enable = true;
 
@@ -227,6 +204,9 @@ in
         options = "--delete-older-than 90d";
       };
     };
+
+    # TODO: Enable this once my /etc/nixos/configuration.nix stays constant.
+    # system.autoUpgrade.enable = true;
 
     # This value determines the NixOS release from which the default
     # settings for stateful data, like file locations and database versions

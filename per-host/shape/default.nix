@@ -95,6 +95,17 @@ in
     #     macAddress = "permanent";
     #   };
     # };
+
+    firewall = {
+      # Note that this is not needed when services.openssh.enable=true because that opens 22 itself.
+      # allowedTCPPorts = [ 22 ];
+      # allowedUDPPorts = [ ... ];
+      # Or disable the firewall altogether.
+      # enable = false;
+    };
+
+    # Enables wireless support via wpa_supplicant, instead of NetworkManager.
+    # wireless.enable = true;
   };
 
   time.timeZone = "America/Los_Angeles";
@@ -140,8 +151,8 @@ in
     ] ++ (optional (!(elem "video=eDP-1:d" config.boot.kernelParams)) {
       output = "eDP";
     });
-  };
 
-  # TODO: Enable this once my /etc/nixos/configuration.nix stays constant.
-  # system.autoUpgrade.enable = true;
+    # Firefox doesn't honor, but MATE would.
+    # dpi = 110;
+  };
 }
