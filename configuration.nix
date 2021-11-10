@@ -143,18 +143,22 @@ in
       ];
     };
 
+    nixpkgs.overlays = [
+      (self: super: {
+        # TODO: Until comixcursors is in nixpkgs, must use my external package.
+        #       Once it is in nixpkgs, this should be deleted.
+        comixcursors = assert ! (super ? comixcursors);
+                       super.callPackage (fetchGit https://github.com/DerickEddington/nix-comixcursors.git) {};
+      })
+    ];
+
     environment = let
       with-unhidden-gitdir = import ./users/with-unhidden-gitdir.nix { inherit pkgs; };
       myEmacs = import ./emacs.nix { inherit pkgs; };
       myFirefox = import ./firefox.nix { inherit pkgs; };
-      # TODO: Until comixcursors is in pkgs, must use my external package.  Once
-      #       it is in pkgs, this variable and its uses should be deleted and
-      #       pkgs.comixcursors used instead.
-      comixcursors = assert ! (let nixpkgs = import <nixpkgs> {}; in nixpkgs ? comixcursors);
-                     pkgs.callPackage (fetchGit https://github.com/DerickEddington/nix-comixcursors.git) {};
       # Reduced set of the Comix Cursors variants (don't want all of them).
       comixcursorsChosen =
-        map ({color, hand}: comixcursors."${hand}Opaque_${color}")
+        map ({color, hand}: pkgs.comixcursors."${hand}Opaque_${color}")
           (lib.attrsets.cartesianProductOfSets {
             color = [ "Blue" "Green" "Orange" "Red" ];
             hand = [ "" "LH_" ];
