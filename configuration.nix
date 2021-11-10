@@ -101,6 +101,18 @@ in
         # dpi = 110;
 
         desktopManager.mate.enable = true;
+
+        displayManager.lightdm = {
+          # background = pkgs.nixos-artwork.wallpapers.simple-red.gnomeFilePath;
+          greeters.gtk = {
+            theme.name = "Adwaita-dark";
+            cursorTheme = {
+              package = pkgs.comixcursors.LH_Opaque_Orange;
+              name = "ComixCursors-LH-Opaque-Orange";
+              size = 48;
+            };
+          };
+        };
       };
 
       # Enable CUPS to print documents.
