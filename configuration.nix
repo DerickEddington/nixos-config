@@ -5,6 +5,12 @@
 { config, options, pkgs, lib, ... }:
 
 let
+  inherit (builtins) elem;
+  inherit (lib) getName mkOption optionals;
+  inherit (lib.attrsets) cartesianProductOfSets;
+in
+
+let
   # Choose for the particular host machine.
   hostName = "shape";
 in
@@ -15,7 +21,7 @@ in
   ];
 
   options.my = {
-    hostName = lib.mkOption { type = options.networking.hostName.type; };
+    hostName = mkOption { type = options.networking.hostName.type; };
   };
 
   config = {
@@ -127,7 +133,7 @@ in
       # allowUnfree = true;
 
       # Allow and show only select "unfree" packages.
-      allowUnfreePredicate = pkg: builtins.elem (lib.getName pkg) [
+      allowUnfreePredicate = pkg: elem (getName pkg) [
         # "${name}"
       ];
     };
@@ -148,17 +154,16 @@ in
       # Reduced set of the Comix Cursors variants (don't want all of them).
       comixcursorsChosen =
         map ({color, hand}: pkgs.comixcursors."${hand}Opaque_${color}")
-          (lib.attrsets.cartesianProductOfSets {
+          (cartesianProductOfSets {
             color = [ "Blue" "Green" "Orange" "Red" ];
             hand = [ "" "LH_" ];
           });
     in {
-      systemPackages = [
+      systemPackages = (with pkgs; [
         with-unhidden-gitdir
         myEmacs
         myFirefox
-      ]
-      ++ (with pkgs; [
+      ] ++ [
         lsb-release
         man-pages
         man-pages-posix
@@ -171,19 +176,20 @@ in
         ripgrep
         file
         screen
-      ]) ++ (if config.services.xserver.enable then
+      ] ++ (optionals config.services.xserver.enable (
+        (optionals config.services.xserver.desktopManager.mate.enable [
+          libreoffice
+          rhythmbox
+          mate.mate-icon-theme-faenza
+        ]) ++
         comixcursorsChosen
-        ++ (with pkgs; [
-        # TODO: Only have the ones that I keep using.
-        pop-icon-theme
-        materia-theme
-        material-icons
-        material-design-icons
-      ]) ++ (if config.services.xserver.desktopManager.mate.enable then (with pkgs; [
-        mate.mate-icon-theme-faenza
-        libreoffice
-        rhythmbox
-      ]) else []) else []);
+        ++ [
+          # TODO: Only have the ones that I keep using.
+          pop-icon-theme
+          materia-theme
+          material-icons
+          material-design-icons
+        ])));
 
       variables = rec {
         # Use absolute paths for these, in case some usage does not use PATH.
