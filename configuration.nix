@@ -176,10 +176,11 @@ in
         ripgrep
         file
         screen
-      ] ++ (optionals config.services.xserver.enable (
+      ] ++ (if config.services.xserver.enable then (
         (optionals config.services.xserver.desktopManager.mate.enable [
           libreoffice
           rhythmbox
+          transmission-gtk
           mate.mate-icon-theme-faenza
         ]) ++
         comixcursorsChosen
@@ -189,7 +190,9 @@ in
           materia-theme
           material-icons
           material-design-icons
-        ])));
+        ]) else [
+          transmission
+        ]));
 
       variables = rec {
         # Use absolute paths for these, in case some usage does not use PATH.
