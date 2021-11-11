@@ -134,7 +134,7 @@ in
 
       # Allow and show only select "unfree" packages.
       allowUnfreePredicate = pkg: elem (getName pkg) [
-        # "${name}"
+        "Oracle_VM_VirtualBox_Extension_Pack"
       ];
     };
 
@@ -196,6 +196,13 @@ in
         VISUAL = "${myEmacs}/bin/emacs --no-window-system";
         EDITOR = VISUAL;
         PAGER = "${pkgs.most}/bin/most";
+      };
+    };
+
+    virtualisation.virtualbox = {
+      host = {
+        enable = true;
+        enableExtensionPack = true;
       };
     };
 
