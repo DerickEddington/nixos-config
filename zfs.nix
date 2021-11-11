@@ -4,7 +4,9 @@
 { config, pkgs, lib, ... }:
 
 let
-  inherit (builtins) all attrValues catAttrs elem elemAt length listToAttrs match pathExists;
+  inherit (builtins)
+    all attrNames attrValues catAttrs concatStringsSep elem elemAt length
+    listToAttrs match pathExists;
   inherit (lib) mkMerge mkOption types;
   inherit (lib.lists) unique;
   inherit (lib.attrsets) filterAttrs;
@@ -17,12 +19,16 @@ let
 
   # My ZFS pool names have a short alpha-numeric unique ID suffix, like: main-1z9h4t
   poolNameRegex = "([[:alpha:]]+)-([[:alnum:]]{6})";
+
+  zvolVMsBlkDevExists = id: pathExists "/dev/zvol/${config.my.zfs.pools.main.name}/VMs/blkdev-${id}";
+
+  userExists = userName: elem userName (attrNames config.users.users);
 in
 {
   options.my.zfs =
     with types;
     let
-      driveID = (addCheck str driveExists) // {description = "drive ID";};
+      driveID = (addCheck str driveExists) // { description = "drive ID"; };
 
       nonEmptyListOfUniqueDriveIDs =
         let type = addCheck (nonEmptyListOf driveID)
@@ -47,6 +53,10 @@ in
         name = mkOption { type = uniq (strMatching poolNameRegex); };
         baseDataset = mkOption { type = uniq str; default = ""; };
       };
+
+      zvolVMsBlkDevID = (addCheck str zvolVMsBlkDevExists) // { description = "zvol VMs blkdev ID"; };
+
+      userName = (addCheck str userExists) // { description = "user name"; };
     in {
       mirrorDrives = mkOption {
         type = uniq nonEmptyListOfUniqueDriveIDs;
@@ -69,11 +79,25 @@ in
         boot = poolOptions;
         main = poolOptions;
       };
+
+      usersZvolsForVMs = mkOption {
+        type = listOf (submodule {
+          options = {
+            id = mkOption {
+              type = zvolVMsBlkDevID;
+            };
+            owner = mkOption {
+              type = userName;
+            };
+          };
+        });
+        default = [];
+      };
     };
 
   config = let
     inherit (config.my) hostName;
-    inherit (config.my.zfs) mirrorDrives firstDrive partitions pools;
+    inherit (config.my.zfs) mirrorDrives firstDrive partitions pools usersZvolsForVMs;
   in {
     # To avoid infinite recursion, must check these aspects here.
     assertions =
@@ -104,6 +128,11 @@ in
         uniquePoolsDatasets = { pools, ... }:
           let poolsConfigs = attrValues pools;
           in length (unique poolsConfigs) == length poolsConfigs;
+
+        # Must not configure a /dev/zvol/${pools.main.name}/VMs/blkdev-${id}
+        # more than once.
+        uniqueZvolVMsBlkDevIDs = { usersZvolsForVMs, ... }:
+          allUnique (map (x: x.id) usersZvolsForVMs);
       in [
         (assertMyZfs uniquePartitions
           "my.zfs.partitions must be unique, except for boot and main")
@@ -113,6 +142,8 @@ in
           "my.zfs.pools names must all have the same ID suffix")
         (assertMyZfs uniquePoolsDatasets
           "my.zfs.pools datasets must be unique, when same pool")
+        (assertMyZfs uniqueZvolVMsBlkDevIDs
+          "my.zfs.usersZvolsForVMs IDs must be unique")
       ];
 
     boot = {
@@ -171,13 +202,20 @@ in
         };
         mountSpecs = makeAttr: list: listToAttrs (map makeAttr list);
 
-        zfsMountSpecAttr = poolName: { mountPoint, subDataset }:
+        zfsMountSpecAttr = poolName: { mountPoint, dataset }:
           mountSpecAttr {
             inherit mountPoint;
-            device = "${poolName}/${hostName}${subDataset}";
+            device = "${poolName}${dataset}";
             fsType = "zfs"; options = [ "zfsutil" ];
           };
         zfsMountSpecs = poolName: mountSpecs (zfsMountSpecAttr poolName);
+
+        zfsPerHostMountSpecAttr = poolName: { mountPoint, subDataset }:
+          zfsMountSpecAttr poolName {
+            inherit mountPoint;
+            dataset = "/${hostName}${subDataset}";
+          };
+        zfsPerHostMountSpecs = poolName: mountSpecs (zfsPerHostMountSpecAttr poolName);
 
         stateBindMountSpecAttr = mountPoint:
           mountSpecAttr {
@@ -195,15 +233,16 @@ in
             fsType = "vfat"; options = [ "x-systemd.idle-timeout=1min" "x-systemd.automount" "noauto" ];
           };
         efiMountSpecs = drives: mountSpecs efiMountSpecAttr drives;
+      in let
+        bootPool = pools.boot;
+        mainPool = pools.main;
       in
         mkMerge [
-          (let bootPool = pools.boot;
-           in zfsMountSpecs bootPool.name [
+          (zfsPerHostMountSpecs bootPool.name [
              { mountPoint = "/boot"; subDataset = bootPool.baseDataset; }
            ])
 
-          (let mainPool = pools.main;
-           in zfsMountSpecs mainPool.name ([
+          (zfsPerHostMountSpecs mainPool.name ([
              { mountPoint = "/"; subDataset = mainPool.baseDataset; }
            ]
            ++ (map (mountPoint: { inherit mountPoint; subDataset = "${mainPool.baseDataset}${mountPoint}"; }) [
@@ -223,6 +262,10 @@ in
                    "/home/z"
            ])))
 
+          (zfsMountSpecs mainPool.name [
+            { mountPoint = "/mnt/VMs"; dataset = "${mainPool.baseDataset}/VMs"; }
+          ])
+
           (stateBindMountSpecs [
             "/etc/nixos"
             "/etc/cryptkey.d"
@@ -238,5 +281,13 @@ in
                        randomEncryption.enable = true; })
              mirrorDrives)
       else [];
+
+    services.udev.extraRules = concatStringsSep "\n"
+      (map ({ id, owner }:
+            ''KERNEL=="zd*" SUBSYSTEM=="block" ACTION=="add|change" '' +
+            ''PROGRAM="/run/current-system/sw/lib/udev/zvol_id /dev/%k" '' +
+            ''RESULT=="${pools.main.name}/VMs/blkdev-${id}" '' +
+            ''OWNER="${owner}"'')
+        usersZvolsForVMs);
   };
 }

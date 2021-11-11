@@ -49,6 +49,12 @@ in
       boot.name = "boot-${id}";
       main.name = "main-${id}";
     };
+    usersZvolsForVMs = [
+      { id = "a"; owner = "boss"; }
+      { id = "b"; owner = "boss"; }
+      { id = "c"; owner = "z"; }
+      { id = "d"; owner = "z"; }
+    ];
   };
 
   boot = {
