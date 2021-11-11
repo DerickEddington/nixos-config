@@ -19,6 +19,10 @@ let
 
   # My ZFS pool names have a short alpha-numeric unique ID suffix, like: main-1z9h4t
   poolNameRegex = "([[:alpha:]]+)-([[:alnum:]]{6})";
+  # ZFS dataset names as used by my options must begin with "/" and not end
+  # with "/" (and meet the usual ZFS naming requirements), or be the empty
+  # string.
+  datasetNameRegex = "(/[[:alnum:]][[:alnum:].:_-]*)+|";
 
   zvolVMsBlkDevExists = id: pathExists "/dev/zvol/${config.my.zfs.pools.main.name}/VMs/blkdev-${id}";
 
@@ -51,7 +55,7 @@ in
 
       poolOptions = {
         name = mkOption { type = uniq (strMatching poolNameRegex); };
-        baseDataset = mkOption { type = uniq str; default = ""; };
+        baseDataset = mkOption { type = uniq (strMatching datasetNameRegex); default = ""; };
       };
 
       zvolVMsBlkDevID = (addCheck str zvolVMsBlkDevExists) // { description = "zvol VMs blkdev ID"; };
@@ -202,20 +206,22 @@ in
         };
         mountSpecs = makeAttr: list: listToAttrs (map makeAttr list);
 
-        zfsMountSpecAttr = poolName: { mountPoint, dataset }:
+        zfsMountSpecAttr = pool: { mountPoint, subDataset ? "" }:
+          assert match datasetNameRegex subDataset != null;
           mountSpecAttr {
             inherit mountPoint;
-            device = "${poolName}${dataset}";
+            device = "${pool.name}${pool.baseDataset}${subDataset}";
             fsType = "zfs"; options = [ "zfsutil" ];
           };
-        zfsMountSpecs = poolName: mountSpecs (zfsMountSpecAttr poolName);
+        zfsMountSpecs = pool: mountSpecs (zfsMountSpecAttr pool);
 
-        zfsPerHostMountSpecAttr = poolName: { mountPoint, subDataset }:
-          zfsMountSpecAttr poolName {
+        zfsPerHostMountSpecAttr = pool: { mountPoint, subDataset ? "" }:
+          assert match datasetNameRegex subDataset != null;
+          zfsMountSpecAttr pool {
             inherit mountPoint;
-            dataset = "/${hostName}${subDataset}";
+            subDataset = "/${hostName}${subDataset}";
           };
-        zfsPerHostMountSpecs = poolName: mountSpecs (zfsPerHostMountSpecAttr poolName);
+        zfsPerHostMountSpecs = pool: mountSpecs (zfsPerHostMountSpecAttr pool);
 
         stateBindMountSpecAttr = mountPoint:
           mountSpecAttr {
@@ -233,19 +239,16 @@ in
             fsType = "vfat"; options = [ "x-systemd.idle-timeout=1min" "x-systemd.automount" "noauto" ];
           };
         efiMountSpecs = drives: mountSpecs efiMountSpecAttr drives;
-      in let
-        bootPool = pools.boot;
-        mainPool = pools.main;
       in
         mkMerge [
-          (zfsPerHostMountSpecs bootPool.name [
-             { mountPoint = "/boot"; subDataset = bootPool.baseDataset; }
+          (zfsPerHostMountSpecs pools.boot [
+             { mountPoint = "/boot"; }
            ])
 
-          (zfsPerHostMountSpecs mainPool.name ([
-             { mountPoint = "/"; subDataset = mainPool.baseDataset; }
+          (zfsPerHostMountSpecs pools.main ([
+             { mountPoint = "/"; }
            ]
-           ++ (map (mountPoint: { inherit mountPoint; subDataset = "${mainPool.baseDataset}${mountPoint}"; }) [
+           ++ (map (mountPoint: { inherit mountPoint; subDataset = mountPoint; }) [
                    "/nix"
                    "/srv"
                    "/state"
@@ -262,8 +265,8 @@ in
                    "/home/z"
            ])))
 
-          (zfsMountSpecs mainPool.name [
-            { mountPoint = "/mnt/VMs"; dataset = "${mainPool.baseDataset}/VMs"; }
+          (zfsMountSpecs pools.main [
+            { mountPoint = "/mnt/VMs"; subDataset = "/VMs"; }
           ])
 
           (stateBindMountSpecs [
