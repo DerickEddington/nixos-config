@@ -49,12 +49,16 @@ in
       boot.name = "boot-${id}";
       main.name = "main-${id}";
     };
-    usersZvolsForVMs = [
-      { id = "a"; owner = "boss"; }
-      { id = "b"; owner = "boss"; }
-      { id = "c"; owner = "z"; }
-      { id = "d"; owner = "z"; }
-    ];
+    # TODO: Seems there's a bug with Linux 5.13+ that affects /dev/zvol symlinks
+    #       https://github.com/openzfs/zfs/issues/12301
+    #       https://github.com/openzfs/zfs/issues/12507
+    #       https://github.com/fabianishere/pve-edge-kernel/issues/183
+    # usersZvolsForVMs = [
+    #   { id = "a"; owner = "boss"; }
+    #   { id = "b"; owner = "boss"; }
+    #   { id = "c"; owner = "z"; }
+    #   { id = "d"; owner = "z"; }
+    # ];
   };
 
   boot = {
