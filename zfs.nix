@@ -8,7 +8,7 @@ let
     all attrNames attrValues catAttrs concatStringsSep elem elemAt length
     listToAttrs match pathExists;
   inherit (lib) mkMerge mkOption types;
-  inherit (lib.lists) unique;
+  inherit (lib.lists) imap1 unique;
   inherit (lib.attrsets) filterAttrs;
 in
 
@@ -148,6 +148,15 @@ in
           "my.zfs.pools datasets must be unique, when same pool")
         (assertMyZfs uniqueZvolVMsBlkDevIDs
           "my.zfs.usersZvolsForVMs IDs must be unique")
+        {
+          assertion =    (map (x: x.devices) config.boot.loader.grub.mirroredBoots)
+                      == (map (d: [ "/dev/disk/by-id/${d}" ]) mirrorDrives);
+          message = "boot.loader.grub.mirroredBoots does not correspond to only my.zfs.mirrorDrives";
+        }
+        {
+          assertion = config.boot.loader.grub.mirroredBoots != [] -> config.boot.loader.grub.devices == [];
+          message = "Should not define both boot.loader.grub.devices and boot.loader.grub.mirroredBoots";
+        }
       ];
 
     boot = {
@@ -161,20 +170,25 @@ in
           copyKernels = true;
           efiSupport = true;
           zfsSupport = true;
-          devices = map (drive: "/dev/disk/by-id/${drive}") mirrorDrives;
           # for systemd-autofs
           extraPrepareConfig = ''
             mkdir -p /boot/efis
             for i in  /boot/efis/*; do mount $i ; done
           '';
           mirroredBoots =
-            map (drive: { devices = [ "/dev/disk/by-id/${drive}" ];
-                          efiSysMountPoint = "/boot/efis/${drive}-part${toString partitions.EFI}";
-                          path = "/boot"; })
-                mirrorDrives;
+            imap1 (i: drive: {
+              devices = [ "/dev/disk/by-id/${drive}" ];
+              efiBootloaderId = "NixOS-${hostName}-drive${toString i}";
+              efiSysMountPoint = "/boot/efis/${drive}-part${toString partitions.EFI}";
+              path = "/boot";
+            }) mirrorDrives;
         };
 
         efi.efiSysMountPoint = "/boot/efis/${firstDrive}-part${toString partitions.EFI}";
+
+        # TODO?: Maybe extraInstallCommands should be used to use efibootmgr to
+        # add the 2nd drive to the boot order?  But only if
+        # efi.canTouchEfiVariables is true?
 
         generationsDir.copyKernels = true;
       };
