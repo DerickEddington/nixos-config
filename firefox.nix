@@ -1,7 +1,7 @@
 { pkgs }:
 
 let
-  inherit (pkgs) wrapFirefox firefox-unwrapped fetchFirefoxAddon;
+  inherit (pkgs) wrapFirefox firefox-unwrapped /*fetchFirefoxAddon*/;
 in
   wrapFirefox firefox-unwrapped {
 
@@ -29,17 +29,19 @@ in
     extraPrefs = ''
     '';
 
+    # Note: NixOS 21.11 rejects if this attribute is even defined, when the
+    # Firefox is not ESR.
     # Note: If this were non-empty, then manually-installed addons would be
     # disabled, which I think means that addons installed via users'
     # home-manager (e.g. via NUR) would be disabled, which means that addons
     # would not be upgraded to their latest versions because specifying them
     # here requires pinning them to a version unlike with home-manager+NUR where
     # the versions are upgraded.
-    nixExtensions = [
-      # (fetchFirefoxAddon {
-      #   name = ""; # Has to be unique!
-      #   url = "https://addons.mozilla.org/firefox/downloads/.xpi";
-      #   sha256 = "";
-      # })
-    ];
+    # nixExtensions = [
+    #   # (fetchFirefoxAddon {
+    #   #   name = ""; # Has to be unique!
+    #   #   url = "https://addons.mozilla.org/firefox/downloads/.xpi";
+    #   #   sha256 = "";
+    #   # })
+    # ];
   }
