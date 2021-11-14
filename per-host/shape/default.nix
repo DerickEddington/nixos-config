@@ -54,10 +54,14 @@ in
     #       https://github.com/openzfs/zfs/issues/12507
     #       https://github.com/fabianishere/pve-edge-kernel/issues/183
     # usersZvolsForVMs = [
-    #   { id = "a"; owner = "boss"; }
-    #   { id = "b"; owner = "boss"; }
-    #   { id = "c"; owner = "z"; }
-    #   { id = "d"; owner = "z"; }
+    #   { id = "1"; owner = "boss"; }
+    #   { id = "2"; owner = "boss"; }
+    #   { id = "3"; owner = "z"; }
+    #   { id = "4"; owner = "z"; }
+    #   # { id = "5"; owner = ; }
+    #   # { id = "6"; owner = ; }
+    #   # { id = "7"; owner = ; }
+    #   # { id = "8"; owner = ; }
     # ];
   };
 
@@ -91,8 +95,6 @@ in
   };
 
   networking = {
-    hostId = "7b92cf39";
-
     # # TODO: Might be needed to work with my router's MAC filter.  Though, the
     # # default of macAddress="preserve" might work once it has connected once
     # # (with the MAC filter disabled temporarily), and the default
