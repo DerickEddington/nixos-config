@@ -148,7 +148,10 @@ in
         # TODO: Until comixcursors is in nixpkgs, must use my external package.
         #       Once it is in nixpkgs, this should be deleted.
         comixcursors = assert ! (super ? comixcursors);
-                       super.callPackage (fetchGit https://github.com/DerickEddington/nix-comixcursors.git) {};
+                       super.callPackage (fetchGit {
+                         url = https://github.com/DerickEddington/nix-comixcursors.git;
+                         ref = "main";
+                       }) {};
       })
     ];
 
