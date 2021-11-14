@@ -24,7 +24,7 @@ let
   # string.
   datasetNameRegex = "(/[[:alnum:]][[:alnum:].:_-]*)+|";
 
-  zvolVMsBlkDevExists = id: pathExists "/dev/zvol/${config.my.zfs.pools.main.name}/VMs/blkdev-${id}";
+  zvolVMsBlkDevExists = id: pathExists "/dev/zvol/${config.my.zfs.pools.main.name}/VMs/blkdev/${id}";
 
   userExists = userName: elem userName (attrNames config.users.users);
 in
@@ -133,7 +133,7 @@ in
           let poolsConfigs = attrValues pools;
           in length (unique poolsConfigs) == length poolsConfigs;
 
-        # Must not configure a /dev/zvol/${pools.main.name}/VMs/blkdev-${id}
+        # Must not configure a /dev/zvol/${pools.main.name}/VMs/blkdev/${id}
         # more than once.
         uniqueZvolVMsBlkDevIDs = { usersZvolsForVMs, ... }:
           allUnique (map (x: x.id) usersZvolsForVMs);
@@ -263,6 +263,7 @@ in
              { mountPoint = "/"; }
            ]
            ++ (map (mountPoint: { inherit mountPoint; subDataset = mountPoint; }) [
+                   "/home"
                    "/nix"
                    "/srv"
                    "/state"
@@ -303,7 +304,7 @@ in
       (map ({ id, owner }:
             ''KERNEL=="zd*" SUBSYSTEM=="block" ACTION=="add|change" '' +
             ''PROGRAM="/run/current-system/sw/lib/udev/zvol_id /dev/%k" '' +
-            ''RESULT=="${pools.main.name}/VMs/blkdev-${id}" '' +
+            ''RESULT=="${pools.main.name}/VMs/blkdev/${id}" '' +
             ''OWNER="${owner}"'')
         usersZvolsForVMs);
   };

@@ -5,7 +5,7 @@
 { config, options, pkgs, lib, ... }:
 
 let
-  inherit (builtins) elem;
+  inherit (builtins) elem readFile substring;
   inherit (lib) getName mkOption optionals;
   inherit (lib.attrsets) cartesianProductOfSets;
 in
@@ -60,6 +60,11 @@ in
 
     networking = {
       hostName = config.my.hostName;
+
+      # Derive from our machine-id.  Use relative path so that this reads the
+      # correct file when doing installs where the new system is located
+      # somewhere other than / (e.g. /mnt/).
+      hostId = substring 0 8 (readFile ../../state/etc/machine-id);
 
       networkmanager = {
         enable = true;

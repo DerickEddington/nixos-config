@@ -1,0 +1,468 @@
+#!/usr/bin/env bash
+set -o monitor -o errexit -o nounset -o xtrace
+
+# Install NixOS on ZFS on root with mirrored drives.
+#
+# This is a modification of:
+# https://openzfs.github.io/openzfs-docs/Getting%20Started/NixOS/Root%20on%20ZFS.html
+#
+# This is intended to be run from a booted NixOS minimal ISO image.
+
+SELF="$0"
+
+
+# Definitions
+
+# The host name of this installation.
+INST_NAME=yoyo
+# A reasonably-globally-unique random identifier suffix for the ZFS pool names.
+# Useful because pool names must be unique when imported, and this allows
+# importing multiple pools that have the same "boot" or "main" prefix.
+while true; do
+    INST_ID=$(dd if=/dev/urandom bs=1 count=100 2>/dev/null | tr -dc 'a-z0-9' | cut -c-6)
+    read -p "Use INST_ID = $INST_ID ? "
+    if [ yes == "$REPLY" ]; then
+        break
+    fi
+done
+[ ${#INST_ID} == 6 ]
+
+DRIVES=(
+    /dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_2TB_S59CNM0R706239E
+    /dev/disk/by-id/nvme-Samsung_SSD_970_EVO_Plus_2TB_S59CNM0R706236Y
+)
+VDEV=mirror
+
+declare -A PARTITION_TYPE_CODE=(
+    # sgdisk will not accept 00000000-0000-0000-0000-000000000000 (nor 0, etc),
+    # so instead use an unassigned random UUID to make the initially-unused
+    # other partitions have an unknown type that nothing will misinterpret.
+       [unused]=$(uuidgen --random)
+    # The peculiar codes of `sgdisk --list-types`:
+     [biosBoot]=ef02
+       [efiSys]=ef00
+      [zfsBoot]=be00
+      [zfsRoot]=bf00
+    [linuxSwap]=8200
+)
+
+declare -A PARTITION_NUMBER=(
+    # This layout is designed to allow the non-essential swap and other
+    # partitions to be destroyed so that the main partition could grow if ever
+    # needed.
+    [legacyBIOS]=1
+           [EFI]=2
+          [boot]=3
+          [main]=4
+          [swap]=5
+    [other-boot]=6
+    [other-main]=7
+)
+declare -A PARTITION_SIZE=(
+    # In GiB.  These sizes are designed so that the non-resizable legacyBIOS,
+    # EFI, and boot partitions are large enough to never be too small.
+    # legacyBIOS will probably never be used and only needs to be large enough
+    # for GRUB's 2nd stage.  EFI will only hold a handful of bootloaders.  boot
+    # could hold many NixOS boot environments' kernels and initrds.  A single
+    # swap partition is made large enough to be able to hibernate my 64 GiB of
+    # RAM (if ZFS ever supports hibernation in the future); and my swap is not
+    # mirrored but is striped and so the total swap space is double what is
+    # given here.  other-boot and other-main are only to allow temporary
+    # installations of another OS like Ubuntu for testing purposes.
+
+   #[legacyBIOS]=fixed
+           [EFI]=1
+          [boot]=8
+         #[main]=remaining
+          [swap]=64
+    [other-boot]=2
+    [other-main]=20
+)
+declare -A PARTITION_TYPE_NAME=(
+    [legacyBIOS]=biosBoot
+           [EFI]=efiSys
+          [boot]=zfsBoot
+          [main]=zfsRoot
+          [swap]=linuxSwap
+    [other-boot]=unused
+    [other-main]=unused
+)
+declare -A PARTITION_OPTS=(
+    # sgdisk options:
+    [legacyBIOS]="--set-alignment=1"
+           [EFI]=""
+          [boot]=""
+          [main]=""
+          [swap]=""
+    [other-boot]=""
+    [other-main]=""
+)
+
+# These are ordered so that partition allocation starts from the beginning for
+# legacyBIOS, EFI, boot, then from the end for other-main, other-boot, swap, and
+# then from the remaining space in the middle for main.
+PARTITION_OP_ORDER=( legacyBIOS EFI boot other-main other-boot swap main )
+declare -A PARTITION_EXTENT=(
+    # The start:end of the sgdisk --new option:
+    [legacyBIOS]=24K:+1000K
+           [EFI]=1M:+${PARTITION_SIZE[EFI]}G
+          [boot]=0:+${PARTITION_SIZE[boot]}G
+    [other-main]=-${PARTITION_SIZE[other-main]}G:0
+    [other-boot]=-${PARTITION_SIZE[other-boot]}G:0
+          [swap]=-${PARTITION_SIZE[swap]}G:0
+          [main]=0:0
+)
+
+# 4 KiB for my SSDs' actual physical sector size.
+ZPOOL_ASHIFT=12
+
+declare -A POOL_NAME=(
+    [boot]=boot-$INST_ID
+    [main]=main-$INST_ID
+)
+
+POOL_PROPS_COMMON=(
+    -o ashift=$ZPOOL_ASHIFT
+    # Auto trimming could maybe be bad for my SSDs.  Will instead have the OS do
+    # `zpool trim` on a schedule.
+    -o autotrim=off
+)
+
+# In GiB
+TMP_DATASET_SIZE=256
+VM_ZVOL_SIZE=64
+
+# These are ordered so that parents are created first, as required.  Those with
+# canmount=off exist only to support being able to inherit properties for all
+# their children.
+
+MAIN_DATASETS_ORDER=(
+    $INST_NAME
+    $INST_NAME/home
+    $INST_NAME/nix
+    $INST_NAME/srv
+    $INST_NAME/state
+    $INST_NAME/tmp
+    $INST_NAME/usr
+    $INST_NAME/usr/local
+    $INST_NAME/var
+    $INST_NAME/var/cache
+    $INST_NAME/var/games
+    $INST_NAME/var/lib
+    $INST_NAME/var/local
+    $INST_NAME/var/log
+    $INST_NAME/var/tmp
+)
+declare -A MAIN_DATASETS=(
+    [$INST_NAME]="          -o mountpoint=/"
+    [$INST_NAME/home]="     -o devices=off -o setuid=off"
+    # Disable atime for faster accesses to the Nix files
+    [$INST_NAME/nix]="      -o atime=off"
+    [$INST_NAME/srv]=""
+    [$INST_NAME/state]=""
+    [$INST_NAME/tmp]="      -o devices=off -o quota=${TMP_DATASET_SIZE}G"
+    [$INST_NAME/usr]="      -o canmount=off"
+    [$INST_NAME/usr/local]=""
+    [$INST_NAME/var]="      -o canmount=off"
+    [$INST_NAME/var/cache]=""
+    [$INST_NAME/var/games]=""
+    [$INST_NAME/var/lib]=""
+    [$INST_NAME/var/local]=""
+    # journald requires ACLs
+    [$INST_NAME/var/log]="  -o compression=zstd -o acltype=posix"
+    [$INST_NAME/var/tmp]="  -o devices=off -o quota=${TMP_DATASET_SIZE}G"
+)
+
+BOOT_DATASETS_ORDER=(
+    $INST_NAME
+)
+declare -A BOOT_DATASETS=(
+    [$INST_NAME]="          -o mountpoint=/boot"
+)
+
+EXTRA_DATASETS_ORDER=(
+    VMs
+    VMs/blkdev
+)
+declare -A EXTRA_DATASETS=(
+    # Only used for VM drive images which can either be files which get
+    # compressed or zvols which do not.
+    [VMs]="-o mountpoint=/mnt/VMs -o compression=zstd \
+           -o atime=off -o devices=off -o exec=off -o setuid=off \
+           -o primarycache=metadata -o secondarycache=metadata"
+    [VMs/blkdev]="-o canmount=off -o compression=off"
+)
+for I in {1..8}; do
+    EXTRA_DATASETS_ORDER+=(VMs/blkdev/$I)
+    EXTRA_DATASETS[VMs/blkdev/$I]="-V ${VM_ZVOL_SIZE}G -s -b $((2 ** ZPOOL_ASHIFT))"
+done
+
+
+# Functions
+
+function wipe-drives
+{
+    local D
+
+    for D in ${DRIVES[@]}; do
+        sgdisk --zap-all $D
+        blkdiscard -v $D || echo "Proceeding without doing blkdiscard"
+    done
+}
+
+function partition-drives
+{
+    local PART_NAME NUM TYPE EXTENT OPTS D P
+
+    for PART_NAME in ${PARTITION_OP_ORDER[@]}; do
+        NUM=${PARTITION_NUMBER[$PART_NAME]}
+        TYPE=${PARTITION_TYPE_CODE[${PARTITION_TYPE_NAME[$PART_NAME]}]}
+        EXTENT=${PARTITION_EXTENT[$PART_NAME]}
+        OPTS=${PARTITION_OPTS[$PART_NAME]}
+
+        sgdisk $OPTS --new=$NUM:$EXTENT --typecode=$NUM:$TYPE --change-name=$NUM:$PART_NAME \
+               ${DRIVES[0]}
+    done
+
+    # Shouldn't be necessary, given how the above works, but might as well to
+    # express intent and guarantee these properties.
+    sgdisk --sort ${DRIVES[0]}
+    sgdisk --randomize-guids ${DRIVES[0]}
+
+    for D in ${DRIVES[@]:1}; do
+        sgdisk --replicate=$D ${DRIVES[0]}
+        sgdisk --randomize-guids $D  # Other drives must not have same GUIDs.
+    done
+
+    # Wait for partitions to show up, because otherwise there would be some race
+    # condition where the following `zpool create` commands wouldn't see some of
+    # the new partitions yet sometimes.
+    partprobe ${DRIVES[@]}
+    while true; do
+        for D in ${DRIVES[@]}; do
+            for P in ${PARTITION_NUMBER[@]}; do
+                if [ ! -b $D-part$P ]; then
+                    sleep 1
+                    continue 3
+                fi
+            done
+        done
+        break
+    done
+}
+
+function create-boot-pool
+{
+    # Only features supported by GRUB
+    zpool create -d \
+          -o feature@async_destroy=enabled \
+          -o feature@bookmarks=enabled \
+          -o feature@embedded_data=enabled \
+          -o feature@empty_bpobj=enabled \
+          -o feature@enabled_txg=enabled \
+          -o feature@extensible_dataset=enabled \
+          -o feature@filesystem_limits=enabled \
+          -o feature@hole_birth=enabled \
+          -o feature@large_blocks=enabled \
+          -o feature@lz4_compress=enabled \
+          -o feature@spacemap_histogram=enabled \
+          ${POOL_PROPS_COMMON[@]} \
+          -O canmount=off \
+          -O mountpoint=none \
+          -O compression=lz4 \
+          -O devices=off \
+          -O relatime=on \
+          -O xattr=sa \
+          -R /mnt \
+          ${POOL_NAME[boot]} \
+          $VDEV \
+          $(for D in ${DRIVES[@]}; do
+                printf "$D-part${PARTITION_NUMBER[boot]} ";
+            done)
+}
+
+function create-main-pool
+{
+    # I choose to not enable compression across the entire main pool, because my
+    # SSDs are huge and I don't want their 3 GB/sec speeds slowed down by
+    # compression.  Sub datasets can easily enable compression where
+    # appropriate.
+    zpool create \
+          ${POOL_PROPS_COMMON[@]} \
+          -O canmount=off \
+          -O mountpoint=none \
+          -O dnodesize=auto \
+          -O relatime=on \
+          -O xattr=sa \
+          -R /mnt \
+          ${POOL_NAME[main]} \
+          $VDEV \
+          $(for D in ${DRIVES[@]}; do
+                printf "$D-part${PARTITION_NUMBER[main]} ";
+            done)
+}
+
+function create-sub-datasets
+{
+    local POOL=$1
+    local -n DATASETS=$2 DATASETS_ORDER=$2_ORDER
+    local DATASET_NAME OPTS
+
+    for DATASET_NAME in ${DATASETS_ORDER[@]}; do
+        OPTS=${DATASETS[$DATASET_NAME]}
+        zfs create -v $OPTS $POOL/$DATASET_NAME
+    done
+}
+
+function setup-EFI-system-partitions
+{
+    local NUM=${PARTITION_NUMBER[EFI]} D DEV DIR
+
+    for D in ${DRIVES[@]}; do
+        DEV=$D-part$NUM
+        DIR=/mnt/boot/efis/${D##*/}-part$NUM
+        mkfs.vfat -F 32 -n EFI $DEV
+        mkdir -p $DIR
+        mount -t vfat $DEV $DIR
+    done
+}
+
+function disable-zpool-cache
+{
+    # Do not want the automatic importing that a ZFS pool cache file causes, and
+    # do not want a cache file to be automatically created, so create an empty
+    # dummy that is immutable.  My /etc/nixos/configuration.nix handles mounting
+    # the datasets itself, and it links to the dummy cache file in /state/.
+
+    local DIR=/mnt/state/etc/zfs
+    local FILE=$DIR/zpool.cache
+
+    mkdir -p $DIR
+    rm -f $FILE
+    touch $FILE
+    chmod a-w $FILE
+    chattr +i $FILE
+}
+
+function setup-state-dir
+{
+    # The ZFS-on-root guide says this would be for "immutable root filesystem"
+    # for "erasing all your darlings", but I'm not doing that.
+
+    local X
+
+    for X in /etc/{nixos,cryptkey.d}; do
+        mkdir -p /mnt/state/$X /mnt/$X
+        mount -o bind /mnt/state/$X /mnt/$X
+    done
+
+    # My /etc/nixos/configuration.nix handles linking to this
+    # /state/etc/machine-id.
+    systemd-machine-id-setup --root=/mnt/state --print
+}
+
+function setup-etc-nixos-git-repo
+{
+    # This script is assumed to be located in .new-installs/ in the correct
+    # repository.
+    local GIT_REPO="$(dirname "$(dirname "$SELF")")"
+    local PERHOST=/mnt/etc/nixos/per-host/$INST_NAME
+
+    cp -d -R -T "$GIT_REPO" /mnt/etc/nixos
+
+    mkdir $PERHOST
+    nixos-generate-config --no-filesystems --dir $PERHOST
+    rm $PERHOST/configuration.nix  # Not needed with my repo.
+}
+
+function suspend-until-post-config-resume
+{
+    cat <<EOF
+
+Now you must setup /mnt/etc/nixos/per-host/$INST_NAME/default.nix et al
+to correspond to this new install:
+
+my.hostName = "$INST_NAME";
+my.zfs.pools = {
+  boot.name = "${POOL_NAME[boot]}";
+  main.name = "${POOL_NAME[main]}";
+};
+
+EOF
+    fdisk -x ${DRIVES[@]}
+    echo
+    zfs list
+
+    echo 'Suspending. When the new config is ready, you must resume this script,
+e.g. by using `fg`.
+'
+    suspend
+}
+
+function snapshot
+{
+    local NAME=$1 POOL
+
+    for POOL in ${POOL_NAME[@]}; do
+        zfs snapshot -r $POOL@$NAME
+    done
+}
+
+
+# Operations
+
+function create-pools
+{
+    create-boot-pool
+    create-main-pool
+}
+
+function create-datasets
+{
+    # Do main first so that mountpoints for the boot pool are created in main pool.
+    create-sub-datasets ${POOL_NAME[main]} MAIN_DATASETS
+    create-sub-datasets ${POOL_NAME[main]} EXTRA_DATASETS
+    create-sub-datasets ${POOL_NAME[boot]} BOOT_DATASETS
+}
+
+function create-zfs
+{
+    wipe-drives
+    partition-drives
+    create-pools
+    create-datasets
+    setup-EFI-system-partitions
+    disable-zpool-cache
+}
+
+function create-nixos-config
+{
+    setup-state-dir
+    setup-etc-nixos-git-repo
+    suspend-until-post-config-resume
+}
+
+function install-nixos
+{
+    nixos-install --root /mnt --verbose --show-trace --cores 0 --max-jobs 8
+}
+
+function clean-up
+{
+    umount /mnt/boot/efis/*
+
+    # This order matters.
+    zpool export ${POOL_NAME[boot]}
+    zpool export ${POOL_NAME[main]}
+}
+
+create-zfs
+create-nixos-config
+snapshot pre-install
+install-nixos
+snapshot post-install
+clean-up
+
+echo "
+Now you may reboot into the newly installed system.
+"
