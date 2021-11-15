@@ -31,7 +31,7 @@ in
 
   # Define this again here to ensure it is checked that this is the same as what
   # /etc/nixos/configuration.nix also defined for the same option.
-  my.hostName = "shape";
+  my.hostName = "yoyo";
 
   my.zfs = {
     mirrorDrives = [  # Names under /dev/disk/by-id/
@@ -45,7 +45,7 @@ in
       main       = 4;
       swap       = 5;
     };
-    pools = let id = "1z9h4t"; in {
+    pools = let id = "7km9ta"; in {
       boot.name = "boot-${id}";
       main.name = "main-${id}";
     };
