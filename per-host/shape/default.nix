@@ -53,16 +53,16 @@ in
     #       https://github.com/openzfs/zfs/issues/12301
     #       https://github.com/openzfs/zfs/issues/12507
     #       https://github.com/fabianishere/pve-edge-kernel/issues/183
-    # usersZvolsForVMs = [
-    #   { id = "1"; owner = "boss"; }
-    #   { id = "2"; owner = "boss"; }
-    #   { id = "3"; owner = "z"; }
-    #   { id = "4"; owner = "z"; }
-    #   # { id = "5"; owner = ; }
-    #   # { id = "6"; owner = ; }
-    #   # { id = "7"; owner = ; }
-    #   # { id = "8"; owner = ; }
-    # ];
+    usersZvolsForVMs = [
+      { id = "1"; owner = "boss"; }
+      { id = "2"; owner = "boss"; }
+      { id = "3"; owner = "z"; }
+      { id = "4"; owner = "z"; }
+      # { id = "5"; owner = ; }
+      # { id = "6"; owner = ; }
+      # { id = "7"; owner = ; }
+      # { id = "8"; owner = ; }
+    ];
   };
 
   boot = {
@@ -75,8 +75,11 @@ in
       # efi.canTouchEfiVariables = false;
     };
 
-    # Use the latest stable kernel, instead of the default LTS one.
-    kernelPackages = pkgs.linuxPackages_latest;
+    # TODO: The ZFS zvol bug (mentioned above) is causing my zvols to not even
+    #       appear, with the newer kernel version.  Once that is fixed and
+    #       available in nixpkgs, re-enable using the newer kernel.
+    # # Use the latest stable kernel, instead of the default LTS one.
+    # kernelPackages = pkgs.linuxPackages_latest;
     # Following https://nixos.wiki/wiki/Linux_kernel --
     # Note that if you deviate from the default kernel version, you should also
     # take extra care that extra kernel modules must match the same version. The
