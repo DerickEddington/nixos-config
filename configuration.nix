@@ -12,7 +12,7 @@ in
 
 let
   # Choose for the particular host machine.
-  hostName = "shape";
+  hostName = "yoyo";
 in
 {
   imports = [
