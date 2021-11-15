@@ -200,7 +200,40 @@ done
 
 # Functions
 
-function wipe-drives
+function wait-until-partitions
+{
+    # Wait for partitions' symlinks in /dev/disk/by-id/ to be either present or
+    # absent, because otherwise there would be some race condition where the
+    # zpool commands wouldn't see some of the changes to the new partitions yet
+    # sometimes.
+
+    local MODE=$1 STATE D P
+
+    sleep 1
+    partprobe ${DRIVES[@]}
+    sleep 1
+
+    while true; do
+        for D in ${DRIVES[@]}; do
+            for P in ${PARTITION_NUMBER[@]}
+            do
+                if [ -b $D-part$P ]; then
+                    STATE=present
+                else
+                    STATE=absent
+                fi
+                if [ $STATE != $MODE ]; then
+                    sleep 1
+                    continue 3
+                fi
+            done
+        done
+
+        break
+    done
+}
+
+function zap-discard-drives
 {
     local D
 
@@ -208,11 +241,13 @@ function wipe-drives
         sgdisk --zap-all $D
         blkdiscard -v $D || echo "Proceeding without doing blkdiscard"
     done
+
+    wait-until-partitions absent
 }
 
 function partition-drives
 {
-    local PART_NAME NUM TYPE EXTENT OPTS D P
+    local PART_NAME NUM TYPE EXTENT OPTS D
 
     for PART_NAME in ${PARTITION_OP_ORDER[@]}; do
         NUM=${PARTITION_NUMBER[$PART_NAME]}
@@ -234,21 +269,7 @@ function partition-drives
         sgdisk --randomize-guids $D  # Other drives must not have same GUIDs.
     done
 
-    # Wait for partitions to show up, because otherwise there would be some race
-    # condition where the following `zpool create` commands wouldn't see some of
-    # the new partitions yet sometimes.
-    partprobe ${DRIVES[@]}
-    while true; do
-        for D in ${DRIVES[@]}; do
-            for P in ${PARTITION_NUMBER[@]}; do
-                if [ ! -b $D-part$P ]; then
-                    sleep 1
-                    continue 3
-                fi
-            done
-        done
-        break
-    done
+    wait-until-partitions present
 }
 
 function create-boot-pool
@@ -399,6 +420,27 @@ e.g. by using `fg`.
     suspend
 }
 
+function resume-check-still-desired
+{
+    # Allow the user to choose to abort at this point, and clean-up if aborting.
+
+    REPLY=""
+    while [ "$REPLY" != yes ] && [ "$REPLY" != no ]; do
+        read -p "Continue with installation? "
+    done
+
+    if [ no == "$REPLY" ]; then
+        # First, destroy the pools we'd created, to prevent them from possibly
+        # being seen again by any other later zpool commands if blkdiscard
+        # cannot be done on these drives (e.g. in some VMs) and some other
+        # partitions are later created that happen to have the same location(s).
+        # Then, destroy the partitions we'd created.
+        clean-up destroy
+        zap-discard-drives
+        exit
+    fi
+}
+
 function snapshot
 {
     local NAME=$1 POOL
@@ -406,6 +448,18 @@ function snapshot
     for POOL in ${POOL_NAME[@]}; do
         zfs snapshot -r $POOL@$NAME
     done
+}
+
+function clean-up
+{
+    local ZCMD=$1
+
+    [ $ZCMD == export ] || [ $ZCMD == destroy ]
+
+    # (This order matters because the preceeding are mounted on the succeeding.)
+    umount /mnt/boot/efis/*
+    zpool $ZCMD ${POOL_NAME[boot]}
+    zpool $ZCMD ${POOL_NAME[main]}
 }
 
 
@@ -427,7 +481,7 @@ function create-datasets
 
 function create-zfs
 {
-    wipe-drives
+    zap-discard-drives
     partition-drives
     create-pools
     create-datasets
@@ -440,6 +494,7 @@ function create-nixos-config
     setup-state-dir
     setup-etc-nixos-git-repo
     suspend-until-post-config-resume
+    resume-check-still-desired
 }
 
 function install-nixos
@@ -447,21 +502,12 @@ function install-nixos
     nixos-install --root /mnt --verbose --show-trace --cores 0 --max-jobs 8
 }
 
-function clean-up
-{
-    umount /mnt/boot/efis/*
-
-    # This order matters.
-    zpool export ${POOL_NAME[boot]}
-    zpool export ${POOL_NAME[main]}
-}
-
 create-zfs
 create-nixos-config
 snapshot pre-install
 install-nixos
 snapshot post-install
-clean-up
+clean-up export
 
 echo "
 Now you may reboot into the newly installed system.
