@@ -112,11 +112,11 @@ in
     # };
 
     firewall = {
+      allowPing = false;
+
       # Note that this is not needed when services.openssh.enable=true because that opens 22 itself.
       # allowedTCPPorts = [ 22 ];
       # allowedUDPPorts = [ ... ];
-      # Or disable the firewall altogether.
-      # enable = false;
     };
 
     # Enables wireless support via wpa_supplicant, instead of NetworkManager.
