@@ -54,7 +54,9 @@ in
       boss = common // {
         extraGroups = [ "wheel" "networkmanager" ];
       };
-      d = common;
+      d = common // {
+        extraGroups = [ "audio" ];
+      };
       z = common;
     };
 
