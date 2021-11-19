@@ -58,6 +58,8 @@ in
         extraGroups = [ "audio" ];
       };
       z = common;
+      banking = common;
+      bills = common;
     };
 
     networking = {
