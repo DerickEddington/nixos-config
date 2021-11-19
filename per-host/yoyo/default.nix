@@ -123,6 +123,8 @@ in
     # wireless.enable = true;
   };
 
+  # services.openssh.enable = true;
+
   time.timeZone = "America/Los_Angeles";
 
   console.font = "ter-v24n";
