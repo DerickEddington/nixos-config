@@ -282,6 +282,11 @@ in
 
           (zfsMountSpecs pools.main [
             { mountPoint = "/mnt/VMs"; subDataset = "/VMs"; }
+            # TODO: Not sure about where to locate these
+            { mountPoint = "/mnt/records"; subDataset = "/records"; }
+            { mountPoint = "/mnt/zone"; subDataset = "/zone"; }
+            # TODO: Won't keep this one
+            { mountPoint = "/mnt/old-d-home"; subDataset = "/old-d-home"; }
           ])
 
           (stateBindMountSpecs [
