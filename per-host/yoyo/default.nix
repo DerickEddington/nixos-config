@@ -113,6 +113,8 @@ in
 
     firewall = {
       allowPing = false;
+      logRefusedConnections = true;
+      logRefusedPackets = true;
 
       # Note that this is not needed when services.openssh.enable=true because that opens 22 itself.
       # allowedTCPPorts = [ 22 ];
