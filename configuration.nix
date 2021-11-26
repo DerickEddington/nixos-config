@@ -6,7 +6,7 @@
 
 let
   inherit (builtins) elem readFile substring;
-  inherit (lib) getName mkOption optionals;
+  inherit (lib) getName mkForce mkOption optionals;
   inherit (lib.attrsets) cartesianProductOfSets;
 in
 
@@ -209,7 +209,15 @@ in
         VISUAL = "${myEmacs}/bin/emacs --no-window-system";
         EDITOR = VISUAL;
         PAGER = "${pkgs.most}/bin/most";
+        SSH_ASKPASS = mkForce "/do/not/want/ssh-askpass"; # Unset by extraInit below.
       };
+
+      extraInit = ''
+        # Do not want this in the environment. NixOS always sets it and does not
+        # provide any option not to, so I must unset it myself via the
+        # environment.extraInit option.
+        unset -v SSH_ASKPASS
+      '';
     };
 
     virtualisation.virtualbox = {
