@@ -112,6 +112,8 @@ in
     programs = {
       nm-applet.enable = true;
 
+      ssh.askPassword = "${pkgs.ssh-askpass-fullscreen}/bin/ssh-askpass-fullscreen";
+
       # TODO: Not sure
       # gnupg.agent = {
       #   enable = true;
@@ -209,15 +211,11 @@ in
         VISUAL = "${myEmacs}/bin/emacs --no-window-system";
         EDITOR = VISUAL;
         PAGER = "${pkgs.most}/bin/most";
-        SSH_ASKPASS = mkForce "/do/not/want/ssh-askpass"; # Unset by extraInit below.
+        # Prevent Git from using SSH_ASKPASS (which NixOS always sets).  This is
+        # a workaround hack, relying on unspecified Git behavior, and hopefully
+        # this is only temporary until a proper resolution.
+        GIT_ASKPASS = "";
       };
-
-      extraInit = ''
-        # Do not want this in the environment. NixOS always sets it and does not
-        # provide any option not to, so I must unset it myself via the
-        # environment.extraInit option.
-        unset -v SSH_ASKPASS
-      '';
     };
 
     virtualisation.virtualbox = {
