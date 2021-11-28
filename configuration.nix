@@ -179,6 +179,7 @@ in
         lsb-release
         man-pages
         man-pages-posix
+        psmisc
         most
         wget
         htop
