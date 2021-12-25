@@ -97,6 +97,20 @@ in
     ];
   };
 
+  # When booting into emergency or rescue targets, do not require the password
+  # of the root user to start a root shell.  I am ok with the security
+  # consequences, for this host.  Do not blindly copy this without
+  # understanding.  Note that SYSTEMD_SULOGIN_FORCE is considered semi-unstable
+  # as described in the file systemd-$VERSION/share/doc/systemd/ENVIRONMENT.md.
+  systemd.services = {
+    emergency.environment = {
+      SYSTEMD_SULOGIN_FORCE = "1";
+    };
+    rescue.environment = {
+      SYSTEMD_SULOGIN_FORCE = "1";
+    };
+  };
+
   networking = {
     # # TODO: Might be needed to work with my router's MAC filter.  Though, the
     # # default of macAddress="preserve" might work once it has connected once
