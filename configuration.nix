@@ -1,7 +1,3 @@
-# Edit this configuration file to define what should be installed on
-# your system.  Help is available in the configuration.nix(5) man page
-# and in the NixOS manual (accessible by running ‘nixos-help’).
-
 { config, options, pkgs, lib, ... }:
 
 let
@@ -114,7 +110,7 @@ in
 
       ssh.askPassword = "${pkgs.ssh-askpass-fullscreen}/bin/ssh-askpass-fullscreen";
 
-      # TODO: Not sure
+      # TODO
       # gnupg.agent = {
       #   enable = true;
       #   enableSSHSupport = true;
@@ -199,7 +195,6 @@ in
         ]) ++
         comixcursorsChosen
         ++ [
-          # TODO: Only have the ones that I keep using.
           pop-icon-theme
           materia-theme
           material-icons
@@ -239,7 +234,6 @@ in
       };
     };
 
-    # TODO: Enable this once my /etc/nixos/configuration.nix stays constant.
     # system.autoUpgrade.enable = true;
 
     # This value determines the NixOS release from which the default

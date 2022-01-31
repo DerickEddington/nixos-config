@@ -186,10 +186,6 @@ in
 
         efi.efiSysMountPoint = "/boot/efis/${firstDrive}-part${toString partitions.EFI}";
 
-        # TODO?: Maybe extraInstallCommands should be used to use efibootmgr to
-        # add the 2nd drive to the boot order?  But only if
-        # efi.canTouchEfiVariables is true?
-
         generationsDir.copyKernels = true;
       };
 
@@ -276,7 +272,6 @@ in
                    "/var/local"
                    "/var/log"
                    "/var/tmp"
-                   # TODO: Will not want to keep this, for users with encrypted home auto-mounted by PAM.
                    "/home/d"
                    "/home/z"
                    "/home/z/zone"
