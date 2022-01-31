@@ -279,8 +279,6 @@ in
 
           (zfsMountSpecs pools.main [
             { mountPoint = "/mnt/VMs"; subDataset = "/VMs"; }
-            # TODO: Won't keep this one
-            { mountPoint = "/mnt/old-d-home"; subDataset = "/old-d-home"; }
           ])
 
           (stateBindMountSpecs [
