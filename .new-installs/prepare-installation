@@ -398,16 +398,41 @@ function setup-etc-nixos-git-repo
 
 function suspend-until-post-config-resume
 {
+    local VM_ZVOL_IDS=()
+    for I in "${!EXTRA_DATASETS[@]}"; do
+        if [[ "$I" =~ ^VMs/blkdev/([[:digit:]]+)$ ]]; then
+            VM_ZVOL_IDS+=("${BASH_REMATCH[1]}")
+        fi
+    done
+    VM_ZVOL_IDS=( $(IFS=$'\n'; sort -n <<<"${VM_ZVOL_IDS[*]}") )
+
     cat <<EOF
 
 Now you must setup /mnt/etc/nixos/per-host/$INST_NAME/default.nix et al
 to correspond to this new install:
 
-my.hostName = "$INST_NAME";
-my.zfs.pools = {
-  boot.name = "${POOL_NAME[boot]}";
-  main.name = "${POOL_NAME[main]}";
-};
+  my.hostName = "$INST_NAME";
+  my.zfs = {
+    mirrorDrives = [
+$(for D in "${DRIVES[@]}"; do
+    echo "      \"$(basename "$D")\""
+  done)
+    ];
+    partitions = {
+$(for P in legacyBIOS EFI boot main swap; do
+    printf "      %-10s = %s;\n" $P ${PARTITION_NUMBER[$P]}
+  done)
+    };
+    pools = let id = "$INST_ID"; in {
+      boot.name = "boot-\${id}";
+      main.name = "main-\${id}";
+    };
+    usersZvolsForVMs = [
+$(for N in "${VM_ZVOL_IDS[@]}"; do
+    echo "      { id = \"$N\"; owner = \"\${TODO}\"; }"
+  done)
+    ];
+  };
 
 EOF
     fdisk -x ${DRIVES[@]}
