@@ -275,7 +275,7 @@ function partition-drives
 function create-boot-pool
 {
     # Only features supported by GRUB
-    zpool create -d \
+    zpool create -f -d \
           -o feature@async_destroy=enabled \
           -o feature@bookmarks=enabled \
           -o feature@embedded_data=enabled \
@@ -308,7 +308,7 @@ function create-main-pool
     # SSDs are huge and I don't want their 3 GB/sec speeds slowed down by
     # compression.  Sub datasets can easily enable compression where
     # appropriate.
-    zpool create \
+    zpool create -f \
           ${POOL_PROPS_COMMON[@]} \
           -O canmount=off \
           -O mountpoint=none \
