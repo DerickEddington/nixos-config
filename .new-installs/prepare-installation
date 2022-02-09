@@ -381,7 +381,7 @@ function setup-etc-nixos-git-repo
 
     cp -d -R -T "$GIT_REPO" /mnt/etc/nixos
 
-    mkdir $PERHOST
+    mkdir -p $PERHOST
     nixos-generate-config --no-filesystems --dir $PERHOST
     rm $PERHOST/configuration.nix  # Not needed with my repo.
 }
