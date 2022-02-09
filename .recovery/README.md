@@ -24,8 +24,25 @@ functioning.  Note that:
 - When NixOS starts-up, the importing of the ZFS pools will take a few minutes
   for each of the `main` and `boot` pools because they are degraded, and the
   initialisation of the swap partitions will take a few minutes because some are
-  missing.  Altogether, this can take over 5 minutes longer than normal.  It
-  should eventually start-up like normal otherwise.
+  missing.  Altogether, this can take 5 to 10 minutes longer than normal (at
+  least with VirtualBox).  It should eventually start-up like normal otherwise.
+
+- If the Stage 1 of the NixOS start-up says
+  ```text
+  importing root ZFS pool "main-xxxxxx".........................................
+  cannot import 'main-xxxxxx': no such pool available
+  ```
+  but you are sure there is at least one functioning drive, this might need to
+  be resolved by moving the functioning drives to the first ports of your
+  storage controller (if not already there, taking the place of failed drives
+  that were there, of course; which requires physically moving them, for a
+  physical machine, of course).  E.g. if you have ports 0,1 and the drive on 0
+  failed, then the good drive on 1 will be moved to 0; or if you have ports
+  0,1,2,3, and the drives on 0,2 failed, then the good drives on 1,3 will be
+  moved to 0,1.  I have seen this issue with VirtualBox and its virtual NVMe SSD
+  VDI drives, at least - but did not research the problem, and have not tried
+  degrading the real drives of my physical laptop - so this issue might only be
+  peculiar to VirtualBox.
 
 ## Replacing Drives
 
