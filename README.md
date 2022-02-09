@@ -7,12 +7,13 @@ As used for my personal laptop.
 - ZFS for all file-systems including the `/` and the `/boot`, giving volume
   management and snapshot backups.
 
-- Mirror ZFS pools on dual SSDs, giving redundancy, fault tolerance, and
-  high-performance striped reading.
+- Mirror ZFS pools on dual (or more) SSDs, giving redundancy, fault tolerance,
+  and high-performance striped reading.
 
 - Mirror EFI system partitions, allowing booting from either in case one fails.
 
-- Striped dual swap partitions, for high performance.
+- Multiple swap partitions, one per drive, not mirrored, for high-performance
+  striped writing and reading.
 
 - Very minimal system state, allowing entire installation to be more easily
   reproduced.
