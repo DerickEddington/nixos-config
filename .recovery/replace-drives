@@ -19,7 +19,7 @@ set -o errexit -o nounset
 SELF="$0"
 
 ## Assert that all needed utilities are available, before doing anything.
-which partx sgdisk zpool zfs mkfs.vfat > /dev/null
+which partx sgdisk partprobe zpool zfs mkfs.vfat > /dev/null
 
 ## Get command-line arguments
 
