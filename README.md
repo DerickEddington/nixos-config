@@ -848,30 +848,9 @@ is generally easy to repeat the steps and make any desired changes, without
 rebooting the live installer.  The `prepare-installation` script is able to
 reformat the drives and start over fresh.
 
-## Booting With Degraded Drives
+## Recovering From Drive Failure
 
-If one (or more, if you had 3+) of your drives fails (or is missing), your
-system should still be able to boot if there is at least one drive still
-functioning.  Note that:
-
-- You might need to enter your UEFI boot manager menu (a.k.a. "BIOS") to choose
-  to boot from one of the remaining functioning drives (each has its own
-  redundant copy of our bootloader) instead of a default drive.  Some UEFIs
-  might not require this because they might automatically choose one of the
-  remaining.
-
-- When NixOS starts-up, the importing of the ZFS pools will take a few minutes
-  for each of the `main` and `boot` pools because they are degraded, and the
-  initialisation of the swap partitions will take a few minutes because some are
-  missing.  Altogether, this can take over 5 minutes longer than normal.  It
-  should eventually start-up like normal otherwise.
-
-- Once your system is running, you should make a back-up ASAP (which hopefully
-  is light, fast, and only incremental because you already had previous back-up
-  snapshots).
-
-- You should replace the failed drives, according to the usual ZFS procedures,
-  so that your pools are healthy again.
+See [Recovering From Drive Failure](.recovery/README.md).
 
 ## References
 
