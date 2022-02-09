@@ -254,7 +254,7 @@ function setup-efi-partition
         then
             D="${BASH_REMATCH[1]}"
             if ! elem-of "$D" ${KEEP_DRIVES[@]}; then
-                rm -v -r -f "$DIR"
+                rm -v -r -f "$DIR" || echo "Proceeding without removing $DIR"
             fi
         fi
     done
