@@ -170,10 +170,15 @@ in
           copyKernels = true;
           efiSupport = true;
           zfsSupport = true;
-          # for systemd-autofs
+          # For systemd-autofs. Designed to not use /etc/fstab (which is no
+          # longer valid during drive-replacement recovery).
           extraPrepareConfig = ''
-            mkdir -p /boot/efis
-            for i in  /boot/efis/*; do mount $i ; done
+            for D in ${toString mirrorDrives}; do
+              DP=$D-part${toString partitions.EFI}
+              E=/boot/efis/$DP
+              mkdir -p $E
+              mount /dev/disk/by-id/$DP $E
+            done
           '';
           mirroredBoots =
             imap1 (i: drive: {
