@@ -5,8 +5,9 @@ set -o errexit -o nounset
 # was installed with the ../.new-installs/prepare-installation script.
 #
 # This is intended to be run from either: the host with degraded pools (if it
-# will still boot-up), or from a boot-up of a live-rescue-ISO-image where the
-# target pools can be imported (with `zpool import -R`).
+# will still boot-up), or from a boot-up of a NixOS live-ISO-image where the
+# target pools can be imported (with `zpool import -R`) and where `nixos-enter`
+# can be used to chroot to the file-system of the host.
 #
 # This is intended to be used with new replacement drives that are at least the
 # same size as and have the same sector size as the good drives that remain,
@@ -27,20 +28,16 @@ function show-usage
 {
     local PROG="$(basename "$SELF")"
 
-    echo "Error: Incorrect command-line arguments."
-    echo
+    if [ ${#ARGS_ERR[@]} -ge 1 ]; then
+        echo "Error: Incorrect arguments."
+        echo
+    fi
     echo "Usage: $PROG \\"
     echo "         --pools suffix-ID   \\  # E.g.: \"7km9ta\""
     echo "         --good drive ...    \\  # /dev/disk/by-id/\$D"
     echo "         --bad-boot part ... \\  # vdev GUID or /dev/disk/by-id/\$D-part\$N"
     echo "         --bad-main part ... \\  # vdev GUID or /dev/disk/by-id/\$D-part\$N"
     echo "         --new drive ...        # /dev/disk/by-id/\$D"
-    echo
-    echo "If the environment variable REPLACE_DRIVES_MOUNT_PREFIX is set, its value is"
-    echo "joined to the front of the path-names of the mount-points of the file-systems"
-    echo "involved in the replacing.  This enables, e.g., this script to be used from a"
-    echo "boot-up of a live-rescue-ISO-image where the target pools have been imported"
-    echo "with \`zpool import -R /mnt\` and when \`export REPLACE_DRIVES_MOUNT_PREFIX=/mnt\`."
     echo
 
     case ${ARGS_ERR[0]:-} in
@@ -76,9 +73,14 @@ function get-args
 {
     GOOD_DRIVES=() BAD_BOOT_PARTITIONS=() BAD_MAIN_PARTITIONS=() NEW_DRIVES=()
     MNT="${REPLACE_DRIVES_MOUNT_PREFIX:-}"
+    ARGS_ERR=(no-options)
 
     while [ $# -ge 1 ]; do
         case "$1" in
+            (--help)
+                ARGS_ERR=()
+                exit 0
+                ;;
             (--pools)
                 SUFFIX_ID="$2"
                 POOLS=({boot,main}-"$SUFFIX_ID")
@@ -99,7 +101,7 @@ function get-args
                     fi
                 done
                 ;;
-            (*) ARGS_ERR=(invalid-option "$1"); return 1 ;;
+            (*) ARGS_ERR=(invalid-option "$1"); exit 1 ;;
         esac
     done
 
@@ -270,9 +272,21 @@ function setup-partitions
 
 function describe-required-next-steps
 {
+    # For saying to disable sandboxed building when in a chroot, which is an
+    # incompatible combination (because sandboxing would use the clone syscall
+    # with CLONE_NEWUSER but that would cause EPERM error when in a chroot (I
+    # think is the issue)).  NIXOS_ENTER_REEXEC is an env var exported by
+    # nixos-enter, and it seems to be an internal implementation detail and not
+    # part of the public interface, and so our use of it risks that it might
+    # change in the future, but there does not seem to be another way to detect
+    # if we are running in nixos-enter or not.
+    local USING_NIXOS_ENTER=${NIXOS_ENTER_REEXEC:-}
+    local SANDBOXING=${USING_NIXOS_ENTER:+"--option sandbox false"}
+
     cat <<EOF
+
 Now you must edit my.zfs.mirrorDrives, in
-$MNT/etc/nixos/per-host/\$YOUR_HOST/default.nix, to
+$MNT/etc/nixos/per-host/$HOSTNAME/default.nix, to
 remove the old replaced drives and add the new replacement drives.  I.e.:
 
   my.zfs = {
@@ -284,12 +298,12 @@ $(for D in "${GOOD_DRIVES[@]}" "${NEW_DRIVES[@]}"; do
     # ... (The other options should not need changing.)
   };
 
-Then you must run \`nixos-rebuild boot --install-bootloader\` from \$YOUR_HOST
-(not some other live rescuer), to regenerate the new system configuration so
-that it uses the new drives and not the old.
+Then you must run
+  nixos-rebuild boot --install-bootloader $SANDBOXING
+to regenerate the new system configuration so that it uses the new drives and
+not the old.
 
-Now booting into \$YOUR_HOST should work normally again, and now you may reboot
-into it.
+Then booting into $HOSTNAME should work normally again.
 EOF
 }
 
