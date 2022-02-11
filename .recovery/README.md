@@ -24,8 +24,8 @@ functioning.  Note that:
 - When NixOS starts-up, the importing of the ZFS pools will take a few minutes
   for each of the `main` and `boot` pools because they are degraded, and the
   initialisation of the swap partitions will take a few minutes because some are
-  missing.  Altogether, this can take 5 to 10 minutes longer than normal (at
-  least with VirtualBox).  It should eventually start-up like normal otherwise.
+  missing.  Altogether, this can take 5 to 10 minutes longer than normal.  It
+  should eventually start-up like normal otherwise.
 
 - If the Stage 1 of the NixOS start-up says
   ```text
@@ -133,6 +133,8 @@ functioning.  Note that:
       ```shell
       umount /boot/efis/*
       exit  # Exit the chroot shell.
+      ```
+      ```shell
       zpool export {boot,main}-$POOL_SUFFIX_ID
       ```
 

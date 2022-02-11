@@ -4,8 +4,8 @@ set -o errexit -o nounset
 # Replace failed/missing drives of degraded ZFS mirror pools, for a host that
 # was installed with the ../.new-installs/prepare-installation script.
 #
-# This is intended to be run from either: the host with degraded pools (if it
-# will still boot-up), or from a boot-up of a NixOS live-ISO-image where the
+# This is intended to be run from either: the host with degraded pools (assuming
+# it will still boot-up), or from a boot-up of a NixOS live-ISO-image where the
 # target pools can be imported (with `zpool import -R`) and where `nixos-enter`
 # can be used to chroot to the file-system of the host.
 #
@@ -210,11 +210,11 @@ function snapshot
 
 function replicate-partitions
 {
-    local I
+    local ND
 
-    for I in ${!NEW_DRIVES[@]}; do
-        sgdisk --replicate=${NEW_DRIVES[I]} ${GOOD_DRIVES[0]}
-        sgdisk --randomize-guids ${NEW_DRIVES[I]}  # Other drives must not have same GUIDs.
+    for ND in ${NEW_DRIVES[@]}; do
+        sgdisk --replicate=$ND ${GOOD_DRIVES[0]}
+        sgdisk --randomize-guids $ND  # Other drives must not have same GUIDs.
     done
 
     sleep 1
