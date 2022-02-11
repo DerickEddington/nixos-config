@@ -40,25 +40,100 @@ functioning.  Note that:
   failed, then the good drive on 1 will be moved to 0; or if you have ports
   0,1,2,3, and the drives on 0,2 failed, then the good drives on 1,3 will be
   moved to 0,1.  I have seen this issue with VirtualBox and its virtual NVMe SSD
-  VDI drives, at least - but did not research the problem, and have not tried
-  degrading the real drives of my physical laptop - so this issue might only be
+  VDI drives, at least, but not with its IDE nor SATA - this issue might only be
   peculiar to VirtualBox.
 
-## Replacing Drives
 
-1. You should physically replace the failed drives (ASAP).
+## Replacing Drives of Degraded Pools
 
-1. Then your ZFS pools and EFI-system-partitions need to be reconfigured to use
-   the new drives, by using the [companion `replace-drives`
-   script](replace-drives) to do this.  See its `--help` and read its source, to
-   understand how to use and what it will do.  This script is designed to also
-   work alternatively from a boot of a live-rescue-image (e.g. the NixOS minimal
-   installer) (in case you could not boot your system), but after using it you
-   must then be able to boot your system (which is hopefully then possible after
-   the script made your pools healthy) to manually do the final steps (which the
-   script will tell you about).
+1. Physically replace the failed drives with new ones that are at least the same
+   size as and have the exact same sector size as the good drives that remain.
 
-2. Optional: After the drives were replaced quickly, or if you will not be
-   replacing them soon, you should make a back-up ASAP (which hopefully is
-   light, fast, and only incremental because you already had previous back-up
-   snapshots).
+2. Either: Boot a NixOS live image (e.g. the minimal installer); or, boot your
+   system that has degraded drives.  It might be safer to boot a live image,
+   which is the only option if you cannot boot your system.
+
+3. Reconfigure your ZFS pools and EFI-system-partitions to use the new drives,
+   by using the [companion `replace-drives` script](replace-drives) to do this.
+   See its `--help` and read its source, to understand how to use and what it
+   will do.  As `root`, do:
+
+   0. If you booted into a NixOS live image, you must do:
+      ```shell
+      POOL_SUFFIX_ID=...  # Yours. E.g.: "7km9ta".
+      zpool import -f -R /mnt main-$POOL_SUFFIX_ID
+      zpool import -f -R /mnt boot-$POOL_SUFFIX_ID
+      nixos-enter --root /mnt
+      ```
+      That enters a chroot shell.  Do this and the next steps' commands in it:
+      ```shell
+      mount --verbose --all  # Bind-mounts /state/etc/{nixos,cryptkey.d}
+      USING_NIXOS_ENTER=true
+      ```
+
+   1. Use `replace-drives` (in either the chroot shell or your booted system):
+
+      0. Check if any required utilities need to be installed first:
+         ```shell
+         /etc/nixos/.recovery/replace-drives
+         ```
+         and if it says something like
+         ```text
+         which: no sgdisk in (...)
+         ...
+         ```
+         then you must install them all.  E.g.:
+         ```shell
+         nix-shell -p gptfdisk ...
+         ```
+      1. See `zpool status -v -P`, `/dev/disk/by-id/*`, and `replace-drives
+         --help`, and figure-out what your arguments need to be based on which
+         drives are good, bad, and new.  Be careful that what you give is
+         correct.
+
+      2. Run `replace-drives` with your arguments.  E.g. something like:
+         ```shell
+         /etc/nixos/.recovery/replace-drives \
+           --pools 7km9ta \
+           --good /dev/disk/by-id/ata-VBOX_HARDDISK_VB9cffc79f-893eef39 \
+           --bad-boot 8016453727397922046 \
+           --bad-main 14625736125159174971 \
+           --new /dev/disk/by-id/ata-VBOX_HARDDISK_VB05d640ec-d141c934
+         ```
+         It will print what it does, and might pause for a couple minutes (due
+         to systemd automount) while attempting to remove the old mount-points
+         in `/boot/efis/`, and then it will print a completion message like:
+         ```text
+          Now you must edit my.zfs.mirrorDrives, in
+          /etc/nixos/per-host/$HOSTNAME/default.nix, to
+          remove the old replaced drives and add the new replacement drives.  I.e.:
+
+            my.zfs = {
+              mirrorDrives = [
+                "ata-VBOX_HARDDISK_VB9cffc79f-893eef39"
+                "ata-VBOX_HARDDISK_VB05d640ec-d141c934"
+              ];
+              # ... (The other options should not need changing.)
+            };
+
+         Then you must run
+           nixos-rebuild boot --install-bootloader $SANDBOXING
+         to regenerate the new system configuration so that it uses the new drives and
+         not the old.
+
+         Then booting into $HOSTNAME should work normally again.
+         ```
+      3. Do the directions given by the completion message:
+         ```shell
+         $EDITOR /etc/nixos/per-host/$HOSTNAME/default.nix  # Change my.zfs.mirrorDrives
+         nixos-rebuild boot --install-bootloader ${USING_NIXOS_ENTER:+ --option sandbox false}
+         ```
+
+   2. If you booted into a NixOS live image, you must clean-up by doing:
+      ```shell
+      umount /boot/efis/*
+      exit  # Exit the chroot shell.
+      zpool export {boot,main}-$POOL_SUFFIX_ID
+      ```
+
+4. Reboot into your system whose pools should now be healthy.
