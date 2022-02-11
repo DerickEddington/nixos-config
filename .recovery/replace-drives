@@ -32,15 +32,36 @@ function show-usage
         echo "Error: Incorrect arguments."
         echo
     fi
-    echo "Usage: $PROG \\"
-    echo "         --pools suffix-ID   \\  # E.g.: \"7km9ta\""
-    echo "         --good drive ...    \\  # /dev/disk/by-id/\$D"
-    echo "         --bad-boot part ... \\  # vdev GUID or /dev/disk/by-id/\$D-part\$N"
-    echo "         --bad-main part ... \\  # vdev GUID or /dev/disk/by-id/\$D-part\$N"
-    echo "         --new drive ...        # /dev/disk/by-id/\$D"
-    echo
+
+    cat <<EOF
+Usage:
+
+  $PROG replace \\
+    --pools suffix-ID \\
+    --good drive ... \\
+    --bad-boot part ... \\
+    --bad-main part ... \\
+    --new drive ...
+
+  $PROG attach \\
+    --pools suffix-ID \\
+    --good drive ... \\
+    --new drive ...
+
+Options:
+  --pools suffix-ID          E.g.: \"7km9ta\"
+  --good drive ...           /dev/disk/by-id/\$D
+  --bad-boot part ...        vdev GUID or /dev/disk/by-id/\$D-part\$N
+  --bad-main part ...        vdev GUID or /dev/disk/by-id/\$D-part\$N
+  --new drive ...            /dev/disk/by-id/\$D
+
+EOF
 
     case ${ARGS_ERR[0]:-} in
+        (invalid-method)
+            local INVALID_METHOD="${ARGS_ERR[1]}"
+            echo "Invalid method: \`$INVALID_METHOD\`."
+            ;;
         (suffix-id)
             echo "Pool-name suffix ID must be of (without name prefix):"
             echo
@@ -73,7 +94,11 @@ function get-args
 {
     GOOD_DRIVES=() BAD_BOOT_PARTITIONS=() BAD_MAIN_PARTITIONS=() NEW_DRIVES=()
     MNT="${REPLACE_DRIVES_MOUNT_PREFIX:-}"
-    ARGS_ERR=(no-options)
+    if [ "${1:-}" != --help ]; then
+        ARGS_ERR=(no-options)
+        METHOD="$1"
+        shift
+    fi
 
     while [ $# -ge 1 ]; do
         case "$1" in
@@ -105,11 +130,23 @@ function get-args
         esac
     done
 
+    [ "${METHOD:-}" ]
     [ "${SUFFIX_ID:-}" ]
     [ ${#GOOD_DRIVES[@]} -ge 1 ]
-    [ ${#BAD_BOOT_PARTITIONS[@]} -ge 1 ]
-    [ ${#BAD_MAIN_PARTITIONS[@]} -ge 1 ]
     [ ${#NEW_DRIVES[@]} -ge 1 ]
+    case "$METHOD" in
+        (replace)
+            [ ${#BAD_BOOT_PARTITIONS[@]} -ge 1 ]
+            [ ${#BAD_MAIN_PARTITIONS[@]} -ge 1 ]
+            ;;
+        (attach)
+            [ ${#BAD_BOOT_PARTITIONS[@]} -eq 0 ]
+            [ ${#BAD_MAIN_PARTITIONS[@]} -eq 0 ]
+            ;;
+    esac
+
+    ARGS_ERR=(invalid-method "$METHOD")
+    [[ "$METHOD" =~ ^(replace|attach)$ ]]
 
     ARGS_ERR=(suffix-id)
     [[ "$SUFFIX_ID" =~ ^[[:alnum:]]{6}$ ]]
@@ -138,11 +175,13 @@ function get-args
     ARGS_ERR=(bad-partitions main)
     check-bad-partitions "${BAD_MAIN_PARTITIONS[@]}"
 
-    ARGS_ERR=(bad-new-amounts
-              "${#BAD_BOOT_PARTITIONS[@]},${#BAD_MAIN_PARTITIONS[@]}"
-              "${#NEW_DRIVES[@]}")
-    [ ${#NEW_DRIVES[@]} -eq ${#BAD_BOOT_PARTITIONS[@]} ]
-    [ ${#NEW_DRIVES[@]} -eq ${#BAD_MAIN_PARTITIONS[@]} ]
+    if [ "$METHOD" = replace ]; then
+        ARGS_ERR=(bad-new-amounts
+                  "${#BAD_BOOT_PARTITIONS[@]},${#BAD_MAIN_PARTITIONS[@]}"
+                  "${#NEW_DRIVES[@]}")
+        [ ${#NEW_DRIVES[@]} -eq ${#BAD_BOOT_PARTITIONS[@]} ]
+        [ ${#NEW_DRIVES[@]} -eq ${#BAD_MAIN_PARTITIONS[@]} ]
+    fi
 
     unset ARGS_ERR  # Above checks all true - did not errexit.
 }
@@ -224,13 +263,25 @@ function replicate-partitions
 
 function setup-zpool-partition
 {
-    local POOL="$1-$SUFFIX_ID" PART=${PARTITION_NUMBER["$1"]} OPTS=("${@:2}") I
+    local POOL="$1-$SUFFIX_ID" PART=${PARTITION_NUMBER["$1"]} OPTS=("${@:2}")
+    local I BAD GOOD
     local -n BAD_PARTITIONS=BAD_"$(upcase "$1")"_PARTITIONS
 
-    for I in ${!NEW_DRIVES[@]}; do
-        BAD=${BAD_PARTITIONS[I]}
+    for I in ${!NEW_DRIVES[@]}
+    do
         NEW=${NEW_DRIVES[I]}-part$PART
-        zpool replace -f ${OPTS[@]} $POOL $BAD $NEW
+
+        case $METHOD in
+            (replace)
+                BAD=${BAD_PARTITIONS[I]}
+                zpool replace -f ${OPTS[@]} $POOL $BAD $NEW
+                ;;
+            (attach)
+                GOOD=${GOOD_DRIVES[0]}-part$PART
+                zpool attach -f ${OPTS[@]} $POOL $GOOD $NEW
+                ;;
+            (*) exit 2 ;;
+        esac
     done
 }
 

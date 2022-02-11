@@ -43,6 +43,14 @@ functioning.  Note that:
   VDI drives, at least, but not with its IDE nor SATA - this issue might only be
   peculiar to VirtualBox.
 
+- Optional: To avoid the delay with starting-up (if you will not be replacing
+  the drives immediately and plan to boot multiple times), it is possible to use
+  `zpool detach` manually to remove the bad drives from the pools so that their
+  status is no longer "degraded", and also remove the bad drives from
+  `my.zfs.mirrorDrives` in `/etc/nixos/per-host/$HOSTNAME/default.nix`, and then
+  run `nixos-rebuild`, which should allow the NixOS start-up to be fast like
+  normal.  If this is done, the `replace-drives attach` form should be used
+  instead, when adding replacement drives as directed by the below section.
 
 ## Replacing Drives of Degraded Pools
 
@@ -93,11 +101,11 @@ functioning.  Note that:
 
       2. Run `replace-drives` with your arguments.  E.g. something like:
          ```shell
-         /etc/nixos/.recovery/replace-drives \
+         /etc/nixos/.recovery/replace-drives replace \  # Or "attach"
            --pools 7km9ta \
            --good /dev/disk/by-id/ata-VBOX_HARDDISK_VB9cffc79f-893eef39 \
-           --bad-boot 8016453727397922046 \
-           --bad-main 14625736125159174971 \
+           --bad-boot 8016453727397922046 \   # Not with "attach"
+           --bad-main 14625736125159174971 \  # Not with "attach"
            --new /dev/disk/by-id/ata-VBOX_HARDDISK_VB05d640ec-d141c934
          ```
          It will print what it does, and might pause for a couple minutes (due
