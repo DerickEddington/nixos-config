@@ -130,30 +130,22 @@ in
       ];
     };
 
-    nixpkgs.config = {
-      # Note that `NIXPKGS_ALLOW_UNFREE=1 nix-env -qa` can be used to see all
-      # "unfree" packages without allowing permanently.
+    nixpkgs = {
+      config = {
+        # Note that `NIXPKGS_ALLOW_UNFREE=1 nix-env -qa` can be used to see all
+        # "unfree" packages without allowing permanently.
 
-      # Allow and show all "unfree" packages that are available.
-      # allowUnfree = true;
+        # Allow and show all "unfree" packages that are available.
+        # allowUnfree = true;
 
-      # Allow and show only select "unfree" packages.
-      allowUnfreePredicate = pkg: elem (getName pkg) [
-        "Oracle_VM_VirtualBox_Extension_Pack"
-      ];
+        # Allow and show only select "unfree" packages.
+        allowUnfreePredicate = pkg: elem (getName pkg) [
+          "Oracle_VM_VirtualBox_Extension_Pack"
+        ];
+      };
+
+      overlays = import ./nixpkgs/overlays.nix;
     };
-
-    nixpkgs.overlays = [
-      (self: super: {
-        # TODO: Until comixcursors is in nixpkgs, must use my external package.
-        #       Once it is in nixpkgs, this should be deleted.
-        comixcursors = assert ! (super ? comixcursors);
-                       super.callPackage (fetchGit {
-                         url = https://github.com/DerickEddington/nix-comixcursors.git;
-                         ref = "main";
-                       }) {};
-      })
-    ];
 
     environment = let
       with-unhidden-gitdir = import ./users/with-unhidden-gitdir.nix { inherit pkgs; };
