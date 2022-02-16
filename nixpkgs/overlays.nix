@@ -8,6 +8,21 @@ let
 in
 
 [
+  # Make the nixos-unstable channel available as pkgs.unstable, for stable
+  # versions of pkgs only.
+  (self: super: let
+    inherit (super) lib;
+    isStableItself = isNull (match "pre.*" lib.trivial.versionSuffix);
+  in
+    if isStableItself then
+      {
+        unstable = assert ! (super ? unstable);
+          # Pass the same config so that attributes like allowUnfreePredicate
+          # are propagated.
+          import <nixos-unstable> { inherit (self) config; };
+      }
+    else {})
+
   # Add the Comix Cursors mouse themes.
   # TODO: Until comixcursors is in nixpkgs, must use my external package.
   #       Once it is in nixos-unstable, that should become the source.
