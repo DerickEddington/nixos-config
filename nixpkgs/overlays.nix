@@ -27,11 +27,13 @@ in
   # TODO: Until comixcursors is in nixpkgs, must use my external package.
   #       Once it is in nixos-unstable, that should become the source.
   #       Once it is in nixpkgs, this overlay should be deleted.
-  (self: super: {
+  (self: super: let
+    # For now, with using my repo, use whatever the latest head of the branch
+    # is, and don't worry about its content hash.
+    myRepo = fetchTarball https://github.com/DerickEddington/nixpkgs/archive/comixcursors.tar.gz;
+    pkg = "pkgs/data/icons/comixcursors";
+  in {
     comixcursors = assert ! (super ? comixcursors);
-      super.callPackage (fetchGit {
-        url = https://github.com/DerickEddington/nix-comixcursors.git;
-        ref = "main";
-      }) {};
+      super.callPackage (myRepo + "/${pkg}") {};
   })
 ]
