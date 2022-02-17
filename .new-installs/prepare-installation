@@ -6,9 +6,11 @@ set -o monitor -o errexit -o nounset -o xtrace
 # This is a modification of:
 # https://openzfs.github.io/openzfs-docs/Getting%20Started/NixOS/Root%20on%20ZFS.html
 #
-# This is intended to be run from a booted NixOS minimal ISO image.
+# This is intended to be run from a booted NixOS minimal ISO image, as root.
 
 SELF="$0"
+
+[[ $UID -eq 0 && $EUID -eq 0 && $USER == root ]]
 
 
 # Definitions
@@ -196,6 +198,9 @@ for I in {1..8}; do
     EXTRA_DATASETS_ORDER+=(VMs/blkdev/$I)
     EXTRA_DATASETS[VMs/blkdev/$I]="-V ${VM_ZVOL_SIZE}G -s -b $((2 ** ZPOOL_ASHIFT))"
 done
+
+# Which channel to use as the needed "nixos-unstable" name.
+CHANNEL_NIXOS_UNSTABLE=https://nixos.org/channels/nixos-unstable
 
 
 # Functions
@@ -456,6 +461,32 @@ function resume-check-still-desired
     fi
 }
 
+function do-in-new-system
+{
+    nixos-enter --silent --root /mnt -- "$@"
+}
+
+function setup-channels
+{
+    # Add and update the nixos-unstable channel because my
+    # /etc/nixos/configuration.nix uses it, and doing nixos-install needs this,
+    # and the new system will need this.
+    #
+    # (Note: The nixos channel is not updated, so that it remains at the
+    # revision provided by the installer system, so that it is the user that
+    # chooses which revision of the installer system to install from and chooses
+    # when to update the channels in the new system.)
+
+    case $1 in
+        (installer) local DO="" ;;
+        (new)       local DO=do-in-new-system ;;
+        (*) exit 2 ;;
+    esac
+
+    $DO nix-channel --add "$CHANNEL_NIXOS_UNSTABLE" nixos-unstable
+    $DO nix-channel --update nixos-unstable
+}
+
 function snapshot
 {
     local NAME=$1 POOL
@@ -514,7 +545,10 @@ function create-nixos-config
 
 function install-nixos
 {
-    nixos-install --root /mnt --verbose --show-trace --cores 0 --max-jobs 8
+    setup-channels installer
+    nixos-install --root /mnt --channel /nix/var/nix/profiles/per-user/root/channels \
+                  --verbose --show-trace --cores 0 --max-jobs 8
+    setup-channels new
 }
 
 create-zfs
