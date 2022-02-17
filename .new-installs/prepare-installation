@@ -12,6 +12,12 @@ SELF="$0"
 
 [[ $UID -eq 0 && $EUID -eq 0 && $USER == root ]]
 
+case "${1:-}" in
+    ("") ;;
+    (--suspend-after-install) SUSPEND_AFTER_INSTALL=true ;;
+    (*) exit 1 ;;
+esac
+
 
 # Definitions
 
@@ -391,6 +397,14 @@ function setup-etc-nixos-git-repo
     rm $PERHOST/configuration.nix  # Not needed with my repo.
 }
 
+function suspend-until-resume
+{
+    local MSG="${1:+ }${1:- }${1:+ }"
+
+    echo -e '\nSuspending.' "When${MSG}ready," 'you must resume this script, e.g. by using `fg`.'
+    suspend
+}
+
 function suspend-until-post-config-resume
 {
     local VM_ZVOL_IDS=()
@@ -434,10 +448,7 @@ EOF
     echo
     zfs list
 
-    echo 'Suspending. When the new config is ready, you must resume this script,
-e.g. by using `fg`.
-'
-    suspend
+    suspend-until-resume "the new config is"
 }
 
 function resume-check-still-desired
@@ -551,11 +562,18 @@ function install-nixos
     setup-channels new
 }
 
+function suspend-after-install
+{
+    suspend-until-resume
+    resume-check-still-desired
+}
+
 create-zfs
 create-nixos-config
 snapshot pre-install
 install-nixos
 snapshot post-install
+if [ ${SUSPEND_AFTER_INSTALL:-} ]; then suspend-after-install; fi
 clean-up export
 
 echo "
