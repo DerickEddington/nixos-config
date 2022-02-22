@@ -182,4 +182,6 @@ in
     # Firefox doesn't honor, but MATE would.
     # dpi = 110;
   };
+
+  services.printing.drivers = [ pkgs.hplip ];
 }
