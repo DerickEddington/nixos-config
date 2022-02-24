@@ -178,6 +178,7 @@ in
         file
         screen
         aspell aspellDicts.en aspellDicts.en-computers aspellDicts.en-science
+        sshfs
       ] ++ (if config.services.xserver.enable then (
         (optionals config.services.xserver.desktopManager.mate.enable [
           libreoffice
