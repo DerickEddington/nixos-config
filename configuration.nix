@@ -101,6 +101,29 @@ in
         };
       };
 
+      # Enable Avahi, for mDNS & DNS-SD, for local-network host & service
+      # discovery.
+      avahi = {
+        enable = true;
+        # Enable nsswitch to resolve hostnames (e.g. *.local) via mDNS via Avahi.
+        nssmdns = true;
+        # Whether to publish aspects of our own host so they can be discovered
+        # by other hosts.
+        publish = {
+          enable = false;  # Disabled for privacy.
+          # Enabling of sub-option(s) for publishing particular aspects:
+          # ...
+        };
+        # Which services to publish (I think) when publish.enable (I think).
+        # extraServiceFiles = let
+        #   premade = "${pkgs.avahi}/etc/avahi/services";
+        # in {
+        #   ssh = "${premade}/ssh.service";
+        #   sftp-ssh = "${premade}/sftp-ssh.service";
+        #   # ...
+        # };
+      };
+
       # Enable CUPS to print documents.
       printing.enable = true;
     };
