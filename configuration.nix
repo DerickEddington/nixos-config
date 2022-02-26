@@ -152,6 +152,16 @@ in
       ];
     };
 
+    # Make Qt theme like GTK.
+    qt5 = let
+      # This predicate exists so that it could be extended with others.
+      isGtkBasedDesktopManager = config.services.xserver.desktopManager.mate.enable;
+    in {
+      enable = isGtkBasedDesktopManager;
+      platformTheme = "gtk2";
+      style = "gtk2";
+    };
+
     nixpkgs = {
       config = {
         # Note that `NIXPKGS_ALLOW_UNFREE=1 nix-env -qa` can be used to see all
