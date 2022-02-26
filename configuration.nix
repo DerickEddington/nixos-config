@@ -128,6 +128,9 @@ in
       printing.enable = true;
     };
 
+    # Some programs need SUID wrappers, can be configured further, or are
+    # started in user sessions, and so should be done here and not in
+    # environment.systemPackages.
     programs = {
       nm-applet.enable = true;
 
@@ -138,10 +141,6 @@ in
       #   enable = true;
       #   enableSSHSupport = true;
       # };
-
-      # Some programs need SUID wrappers, can be configured further or are
-      # started in user sessions.
-      # mtr.enable = true;
     };
 
     fonts = {
