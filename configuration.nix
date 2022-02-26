@@ -48,7 +48,7 @@ in
       };
     in {
       boss = common // {
-        extraGroups = [ "wheel" "networkmanager" ];
+        extraGroups = [ "wheel" "networkmanager" "wireshark" ];
       };
       d = common // {
         extraGroups = [ "audio" ];
@@ -135,6 +135,12 @@ in
       nm-applet.enable = true;
 
       ssh.askPassword = "${pkgs.ssh-askpass-fullscreen}/bin/ssh-askpass-fullscreen";
+
+      # Install Wireshark with a group and setcap-wrapper setup for it.
+      wireshark = {
+        enable = true;
+        package = if config.services.xserver.enable then pkgs.wireshark else pkgs.wireshark-cli;
+      };
 
       # TODO
       # gnupg.agent = {
