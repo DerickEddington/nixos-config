@@ -1,7 +1,7 @@
 { config, options, pkgs, lib, ... }:
 
 let
-  inherit (builtins) elem readFile substring;
+  inherit (builtins) elem match readFile substring;
   inherit (lib) getName mkForce mkOption optionals;
   inherit (lib.attrsets) cartesianProductOfSets;
 in
@@ -102,7 +102,11 @@ in
       };
 
       # Enable Avahi, for mDNS & DNS-SD, for local-network host & service
-      # discovery.
+      # discovery.  It is ok for Avahi and systemd-resolved to both be running
+      # with mDNS & DNS-SD enabled, because they can both use the same UDP port
+      # at the same time.  I want both because only Avahi provides DNS-SD
+      # publishing and only systemd-resolved provides LLMNR, and because some
+      # apps might need/prefer one or the other.
       avahi = {
         enable = true;
         # Enable nsswitch to resolve hostnames (e.g. *.local) via mDNS via Avahi.
@@ -122,6 +126,59 @@ in
         #   sftp-ssh = "${premade}/sftp-ssh.service";
         #   # ...
         # };
+      };
+
+      # Enable systemd-resolved.  Primarily to have its split DNS (which e.g. is
+      # used by the "Use this connection only for resources on its network"
+      # option of NetworkManager "connections") which is especially nice with
+      # VPNs that provide their own private DNS.  Also nice are its caching,
+      # activeness tracking, not suffixing search domains for multi-label names,
+      # process separation for the network-protocol code, and dynamic
+      # coordinated state.
+      resolved = {
+        enable = true;
+        # See `man resolved.conf`.
+        extraConfig = ''
+          # My services.resolved.extraConfig:
+          # Note that these are only the global settings, and that some per-link
+          # settings can override these.  NetworkManager has its own settings
+          # system that it will use for determining the systemd-resolved
+          # settings per-link.
+
+          # Empty to hopefully prevent using compiled-in fallback, for privacy.
+          # I could not figure-out definitively whether this is unnecessary and
+          # unused, when an /etc/resolv.conf or /etc/systemd/resolved.conf exist
+          # even if they and all other relevant (e.g. dynamic per-link)
+          # configurations do not specify any DNS servers at all.  The systemd
+          # man pages are insufficiently clear - resolved.conf(5) suggests that
+          # the compiled-in value is only used when this option is not given
+          # (making me want to give it as empty), but systemd-resolved(8) also
+          # suggests that the compiled-in value is used when simply no other DNS
+          # servers are configured without saying anything about this option
+          # (making me doubt whether there is any way to prevent using the
+          # compiled-in value).  So might as well set it to empty and hope.  A
+          # definitive workaround might be to override pkgs.systemd to rebuild
+          # it with an empty compiled-in fallback (if its .nix derivation file
+          # supported this), but I don't care that much and don't want
+          # rebuilding to be done frequently when updating.  See also:
+          # https://github.com/systemd/systemd/issues/494#issuecomment-118940330
+          FallbackDNS=
+
+          # Might be desired in rare situations where the upstream classic
+          # unicast DNS is e.g. a home router that provides some DNS but without
+          # providing its own domain for searching, and where some single-label
+          # name(s) are not resolvable via other "zero-config" (LLMNR)
+          # responders.
+          # ResolveUnicastSingleLabel=true
+        '';
+        # Enable DNSSEC.  Note that for private domains (a.k.a. "site-private
+        # DNS zones") to not "conflict with DNSSEC operation" even with
+        # "allow-downgrade" (i.e. not have validation failures due to
+        # no-signature), "negative trust anchors" of systemd-resolved must also
+        # be defined for the private domains to turn off DNSSEC validation.
+        # There is a built-in pre-defined set of these, including .home. and
+        # .test. which I use.
+        dnssec = "allow-downgrade";
       };
 
       # Enable CUPS to print documents.
@@ -275,5 +332,16 @@ in
     # Before changing this value read the documentation for this option
     # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
     system.stateVersion = "21.05"; # Did you read the comment?
+
+    assertions = let
+      matchResolvedConfOption = conf: opt: val:
+        (match "(^|.*\n)( *${opt} *= *${val} *)($|\n.*)" conf) != null;
+    in
+      (with config.services; with config.networking; [{
+        assertion = (resolved.fallbackDns != [])
+                    -> !(matchResolvedConfOption resolved.extraConfig "FallbackDNS" "[^\n]*");
+        message =
+          "Cannot have both resolved.fallbackDns and FallbackDNS in resolved.extraConfig";
+      }]);
   };
 }
