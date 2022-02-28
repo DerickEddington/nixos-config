@@ -128,9 +128,6 @@ in
       # allowedTCPPorts = [ 22 ];
       # allowedUDPPorts = [ ... ];
     };
-
-    # Enables wireless support via wpa_supplicant, instead of NetworkManager.
-    # wireless.enable = true;
   };
 
   # If in a situation where an upstream DNS server does not support DNSSEC
