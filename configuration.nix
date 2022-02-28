@@ -2,7 +2,7 @@
 
 let
   inherit (builtins) all elem hasAttr lessThan match sort readFile substring;
-  inherit (lib) getName mkForce mkOption types;
+  inherit (lib) getName mkDefault mkOption types;
   inherit (lib.lists) flatten optionals unique;
   inherit (lib.attrsets) cartesianProductOfSets;
 in
@@ -268,14 +268,15 @@ in
         # Enable Link-Local Multicast Name Resolution (LLMNR).
         llmnr = multicastMode;  # (Avahi can't do LLMNR, so simpler.)
 
-        # Enable DNSSEC.  Note that for private domains (a.k.a. "site-private
-        # DNS zones") to not "conflict with DNSSEC operation" even with
-        # "allow-downgrade" (i.e. not have validation failures due to
-        # no-signature), "negative trust anchors" of systemd-resolved must also
-        # be defined for the private domains to turn off DNSSEC validation.
-        # There is a built-in pre-defined set of these, including .home. and
-        # .test. which I use.
-        dnssec = "allow-downgrade";
+        # Enable DNSSEC validation done locally.  Note that for private domains
+        # (a.k.a. "site-private DNS zones") to not "conflict with DNSSEC
+        # operation" (i.e. not have validation failures due to no-signature),
+        # even when this option is set to "allow-downgrade", "negative trust
+        # anchors" of systemd-resolved must also be defined for the private
+        # domains to turn off DNSSEC validation.  There is a built-in
+        # pre-defined set of these, including .home. and .test. which I use.
+        # This default may be overridden in ./per-host/${hostName} when needed.
+        dnssec = mkDefault "true";
       };
 
       # Enable CUPS to print documents.

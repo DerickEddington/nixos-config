@@ -133,6 +133,11 @@ in
     # wireless.enable = true;
   };
 
+  # If in a situation where an upstream DNS server does not support DNSSEC
+  # (i.e. cannot even proxy DNSSEC-format datagrams), this could be defined so
+  # that DNS should still work.
+  # services.resolved.dnssec = "allow-downgrade";  # Or "false".
+
   # services.openssh.enable = true;
 
   time.timeZone = "America/Los_Angeles";
