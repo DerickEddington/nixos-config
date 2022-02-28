@@ -115,7 +115,6 @@ in
 
       networkmanager = {
         enable = true;
-        wifi.powersave = true;
         # Defaults that per-connection profiles use when there is no per-profile
         # value.  See `man NetworkManager.conf` and `man nm-settings-nmcli`.
         # These also cause NetworkManager to make the corresponding per-link
@@ -134,6 +133,18 @@ in
           # Enable mDNS & LLMNR for all connection profiles by default.
           "connection.mdns" = if canBeMDNSresponder then multicastMode else nonPublish;
           "connection.llmnr" = multicastMode;  # (Avahi can't do LLMNR, so simpler.)
+        };
+        wifi = {
+          backend = "iwd";
+          powersave = true;
+        };
+      };
+
+      wireless.iwd = {
+        enable = true;  # More modern than wpa_supplicant.
+        settings = {
+          # # TODO: Needed/desired for using hidden SSIDs?
+          # Settings.Hidden = true;
         };
       };
     };
