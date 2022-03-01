@@ -120,7 +120,6 @@ in
     # };
 
     firewall = {
-      allowPing = false;
       logRefusedConnections = true;
       logRefusedPackets = true;
 
