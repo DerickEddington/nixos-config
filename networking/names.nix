@@ -172,23 +172,15 @@ in
           # defined to achieve desired effects like consistently having
           # the same mDNS and LLMNR modes across global and per-link settings.
 
-          # Empty to hopefully prevent using compiled-in fallback, for privacy.
-          # I could not figure-out definitively whether this is unnecessary and
-          # unused, when an /etc/resolv.conf or /etc/systemd/resolved.conf exist
-          # even if they and all other relevant (e.g. dynamic per-link)
-          # configurations do not specify any DNS servers at all.  The systemd
-          # man pages are insufficiently clear - resolved.conf(5) suggests that
-          # the compiled-in value is only used when this option is not given
-          # (making me want to give it as empty), but systemd-resolved(8) also
-          # suggests that the compiled-in value is used when simply no other DNS
-          # servers are configured without saying anything about this option
-          # (making me doubt whether there is any way to prevent using the
-          # compiled-in value).  So might as well set it to empty and hope.  A
-          # definitive workaround might be to override pkgs.systemd to rebuild
-          # it with an empty compiled-in fallback (if its .nix derivation file
-          # supported this), but I don't care that much and don't want
-          # rebuilding to be done frequently when updating.  See also:
-          # https://github.com/systemd/systemd/issues/494#issuecomment-118940330
+          # Empty to prevent using compiled-in fallback servers (which are
+          # Googstapo & Cloudfart), for privacy and because if my situation
+          # fails to provide DNS then I want that to be apparent.  I tested
+          # (with a link setup without DNS) that fallbacks are not used when
+          # this is set to empty, but are if it is not set.  The systemd man
+          # pages and internet search results are somewhat unclear about when
+          # exactly the fallbacks are used or not.  So even after testing, I'm
+          # only 99% sure that "empty to prevent" can be depended on into the
+          # future.
           FallbackDNS=
 
           # Enable using mDNS for things that do not go through Avahi
