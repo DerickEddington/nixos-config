@@ -2,7 +2,7 @@
 
 let
   inherit (builtins) elem readFile substring;
-  inherit (lib) getName mkOption;
+  inherit (lib) getName mkDefault mkOption;
   inherit (lib.lists) optionals;
   inherit (lib.attrsets) cartesianProductOfSets;
 in
@@ -67,6 +67,8 @@ in
       # correct file when doing installs where the new system is located
       # somewhere other than / (e.g. /mnt/).
       hostId = substring 0 8 (readFile ../../state/etc/machine-id);
+
+      firewall.allowPing = mkDefault false;
 
       networkmanager = {
         enable = true;
