@@ -262,6 +262,7 @@ in
 
           (zfsPerHostMountSpecs pools.main ([
              { mountPoint = "/"; }
+             { mountPoint = "/mnt/archive"; subDataset = "/archive"; }
              { mountPoint = "/mnt/records"; subDataset = "/records"; }
            ]
            ++ (map (mountPoint: { inherit mountPoint; subDataset = mountPoint; }) [
