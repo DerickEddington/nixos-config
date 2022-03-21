@@ -291,7 +291,8 @@ intended for rarely setting-up a new personal system only every few years or so
       ```
       1. Change `fileSystems` elements to match your choices in steps 3.6 and
          3.7 (if any).
-      2. Remove my `/mnt/records` dataset (unless you want that).
+      2. Remove my `/mnt/archive` and `/mnt/records` datasets (unless you want
+         those).
 
    3. Adjust `per-host/` to be for your new host:
       ```shell
@@ -348,10 +349,11 @@ intended for rarely setting-up a new personal system only every few years or so
         };
    --- a/zfs.nix
    +++ b/zfs.nix
-   @@ -257,7 +257,6 @@ in
+   @@ -257,8 +257,6 @@ in
 
               (zfsPerHostMountSpecs pools.main ([
                  { mountPoint = "/"; }
+   -             { mountPoint = "/mnt/archive"; subDataset = "/archive"; }
    -             { mountPoint = "/mnt/records"; subDataset = "/records"; }
                ]
                ++ (map (mountPoint: { inherit mountPoint; subDataset = mountPoint; }) [
