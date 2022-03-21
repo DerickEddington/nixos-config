@@ -49,5 +49,6 @@ emacsWithPackages
       ]) ++
       (with epkgs.elpaPackages; [
         gnu-elpa-keyring-update
+        adaptive-wrap
       ])
   )
