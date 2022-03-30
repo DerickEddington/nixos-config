@@ -135,6 +135,7 @@ in
   # services.resolved.dnssec = "allow-downgrade";  # Or "false".
 
   # services.openssh.enable = true;
+  # my.intended.netPorts.TCP = [22];
 
   time.timeZone = "America/Los_Angeles";
 
