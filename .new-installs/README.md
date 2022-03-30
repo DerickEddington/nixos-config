@@ -489,16 +489,17 @@ intended for rarely setting-up a new personal system only every few years or so
       pushd /etc/nixos
       $EDITOR per-host/$HOSTNAME/default.nix
       ```
-      Change `services.openssh.enable = true`, e.g:
+      Change `services.openssh.enable = true` and allow its port, e.g:
       ```diff
       --- a/per-host/tester/default.nix
       +++ b/per-host/tester/default.nix
-      @@ -133,52 +97,21 @@ in
-           # wireless.enable = true;
-         };
+      @@ -135,6 +135,6 @@ in
+         # services.resolved.dnssec = "allow-downgrade";  # Or "false".
 
       -  # services.openssh.enable = true;
+      -  # my.intended.netPorts.TCP = [22];
       +  services.openssh.enable = true;
+      +  my.intended.netPorts.TCP = [22];
 
          time.timeZone = "America/Los_Angeles";
       ```
