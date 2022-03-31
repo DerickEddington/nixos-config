@@ -38,6 +38,7 @@ emacsWithPackages
         lsp-ui
         multiple-cursors
         smartparens
+        expand-region
         flycheck
         flycheck-rust
         rust-mode
