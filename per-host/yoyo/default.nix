@@ -186,4 +186,10 @@ in
   };
 
   services.printing.drivers = [ pkgs.hplip ];
+
+
+  # Automatically install the "debug" output of packages if they have that, and
+  # set the NIX_DEBUG_INFO_DIRS environment variable to include them, for GDB to
+  # find them.
+  environment.enableDebugInfo = true;
 }
