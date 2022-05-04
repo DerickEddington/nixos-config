@@ -1,7 +1,8 @@
 { pkgs ? import <nixpkgs> {} }:
 
 let
-  emacsOrig = pkgs.emacs;
+  emacsOrig = assert ! (pkgs ? emacsNativeComp);  # Use stable, once it has this.
+              pkgs.unstable.emacsNativeComp;
   epkgsOrig = emacsOrig.pkgs;
 
   # Use the latest list of what MELPA has, so that updated versions of Emacs
