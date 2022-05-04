@@ -145,6 +145,13 @@ in
 
       ssh.askPassword = "${pkgs.ssh-askpass-fullscreen}/bin/ssh-askpass-fullscreen";
 
+      git = {
+        enable = true;
+        config = {
+          safe.directory = ["/etc/nixos" "/etc/nixos/users/dotfiles"];
+        };
+      };
+
       # Install Wireshark with a group and setcap-wrapper setup for it.
       wireshark = {
         enable = true;
@@ -218,7 +225,7 @@ in
         most
         wget
         htop
-        git
+      # git  # Installed via above programs.git.enable
         unzip
         gnupg
         ripgrep
