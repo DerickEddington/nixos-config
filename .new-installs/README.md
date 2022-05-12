@@ -280,7 +280,8 @@ intended for rarely setting-up a new personal system only every few years or so
          step 3.1).
       2. Change `users.users` elements to have the users you want, including
          those from your choice in step 3.6 (if any).
-      3. Optional: Change anything else you want to be different from my
+      3. Change `system.stateVersion` to the NixOS release that you are installing.
+      4. Optional: Change anything else you want to be different from my
          choices.  (See the [NixOS documentation](https://nixos.org/learn.html),
          especially [Part
          II. Configuration](https://nixos.org/manual/nixos/stable/index.html#ch-configuration).)
