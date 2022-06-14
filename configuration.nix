@@ -2,7 +2,7 @@
 
 let
   inherit (builtins) elem readFile substring;
-  inherit (lib) getName mkDefault mkOption;
+  inherit (lib) getName mkDefault mkOption types;
   inherit (lib.lists) optionals;
   inherit (lib.attrsets) cartesianProductOfSets;
 in
@@ -20,10 +20,14 @@ in
 
   options.my = {
     hostName = mkOption { type = options.networking.hostName.type; };
+    allowedUnfree = with types; mkOption { type = listOf str; };
   };
 
   config = {
     my.hostName = hostName;
+    my.allowedUnfree = [
+      "Oracle_VM_VirtualBox_Extension_Pack"
+    ];
 
     boot = {
       cleanTmpDir = true;
@@ -53,7 +57,7 @@ in
         extraGroups = [ "wheel" "networkmanager" "wireshark" ];
       };
       d = common // {
-        extraGroups = [ "audio" ];
+        extraGroups = [ "audio" "scanner" "lp" ];
       };
       z = common;
       banking = common;
@@ -193,9 +197,7 @@ in
         # allowUnfree = true;
 
         # Allow and show only select "unfree" packages.
-        allowUnfreePredicate = pkg: elem (getName pkg) [
-          "Oracle_VM_VirtualBox_Extension_Pack"
-        ];
+        allowUnfreePredicate = pkg: elem (getName pkg) config.my.allowedUnfree;
       };
 
       overlays = import ./nixpkgs/overlays.nix;
