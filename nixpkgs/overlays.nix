@@ -21,15 +21,4 @@ in
           import <nixos-unstable> { inherit (self) config; };
       }
     else {})
-
-  # Add the Comix Cursors mouse themes.
-  # TODO: Until comixcursors is in stable nixpkgs, use nixos-unstable.
-  #       Once it is in stable, this overlay should be deleted.
-  (self: super:
-    if isStableVersion super then
-      {
-        comixcursors = assert ! (super ? comixcursors);
-          self.unstable.comixcursors;
-      }
-    else assert (super ? comixcursors); {})
 ]
