@@ -20,6 +20,10 @@ in
 
   options.my = {
     hostName = mkOption { type = options.networking.hostName.type; };
+    users.commonAttrs = mkOption {
+      type = with types; attrsOf anything;
+      default = { isNormalUser = true; };
+    };
     allowedUnfree = with types; mkOption { type = listOf str; };
   };
 
@@ -53,9 +57,7 @@ in
     #
     # Per-host users should instead be defined in `per-host/$HOSTNAME/default.nix`.
     users.users = let
-      common = {
-        isNormalUser = true;
-      };
+      common = config.my.users.commonAttrs;
     in {
       boss = common // {
         extraGroups = [ "wheel" "networkmanager" "wireshark" ];

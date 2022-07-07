@@ -99,9 +99,7 @@ in
   };
 
   users.users = let
-    common = {
-      isNormalUser = true;
-    };
+    common = config.my.users.commonAttrs;
   in {
     v = common;
   };
