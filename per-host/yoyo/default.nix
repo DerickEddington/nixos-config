@@ -94,6 +94,8 @@ in
       "tuxedo_keyboard.brightness=25"        # low, if turned on
       "tuxedo_keyboard.color_left=0xff0000"  # red, if turned on
     ];
+
+    zfs.requestEncryptionCredentials = false;  # Or could be a list of selected datasets.
   };
 
   # When booting into emergency or rescue targets, do not require the password

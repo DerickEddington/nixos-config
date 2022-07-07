@@ -359,7 +359,7 @@ intended for rarely setting-up a new personal system only every few years or so
                ]
                ++ (map (mountPoint: { inherit mountPoint; subDataset = mountPoint; }) [
                        "/home"
-   @@ -272,12 +271,12 @@ in
+   @@ -272,15 +271,15 @@ in
                        "/var/local"
                        "/var/log"
                        "/var/tmp"
@@ -368,7 +368,10 @@ intended for rarely setting-up a new personal system only every few years or so
    -                   "/home/z/zone"
    +                   "/home/me"
    +                   "/home/work"
-               ])))
+               ])
+            ++ (map (mountPoint: { inherit mountPoint; subDataset = mountPoint; options = ["noauto"]; }) ([
+               ] ++ encryptedHomes.noAuto))
+           ))
 
               (zfsMountSpecs pools.main [
    +            { mountPoint = "/mnt/old-misc"; subDataset = "/old-misc"; }

@@ -84,6 +84,13 @@ in
         main = poolOptions;
       };
 
+      encryptedHomes = {
+        noAuto = mkOption {
+          type = listOf (strMatching datasetNameRegex);
+          default = [];
+        };
+      };
+
       usersZvolsForVMs = mkOption {
         type = listOf (submodule {
           options = {
@@ -101,7 +108,7 @@ in
 
   config = let
     inherit (config.my) hostName;
-    inherit (config.my.zfs) mirrorDrives firstDrive partitions pools usersZvolsForVMs;
+    inherit (config.my.zfs) mirrorDrives firstDrive partitions pools encryptedHomes usersZvolsForVMs;
   in {
     # To avoid infinite recursion, must check these aspects here.
     assertions =
@@ -282,8 +289,8 @@ in
                    "/home/z"
                    "/home/z/zone"
               ])
-           ++ (map ({mountPoint, options}: { inherit mountPoint options; subDataset = mountPoint; }) [
-              ])
+           ++ (map (mountPoint: { inherit mountPoint; subDataset = mountPoint; options = ["noauto"]; }) ([
+              ] ++ encryptedHomes.noAuto))
           ))
 
           (zfsMountSpecs pools.main [
