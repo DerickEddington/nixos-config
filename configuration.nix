@@ -45,9 +45,13 @@ in
       # keyMap = "us";
     };
 
+    # Users to have in all the hosts that use this configuration.
+    #
     # Don't forget to set a password with `passwd` for each user, and possibly
     # setup a new ZFS dataset for their home, and then run, as the user,
     # `/etc/nixos/users/setup-home`.
+    #
+    # Per-host users should instead be defined in `per-host/$HOSTNAME/default.nix`.
     users.users = let
       common = {
         isNormalUser = true;
