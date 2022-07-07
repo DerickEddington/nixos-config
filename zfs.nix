@@ -221,19 +221,19 @@ in
         };
         mountSpecs = makeAttr: list: listToAttrs (map makeAttr list);
 
-        zfsMountSpecAttr = pool: { mountPoint, subDataset ? "" }:
+        zfsMountSpecAttr = pool: { mountPoint, subDataset ? "", options ? [] }:
           assert match datasetNameRegex subDataset != null;
           mountSpecAttr {
             inherit mountPoint;
             device = "${pool.name}${pool.baseDataset}${subDataset}";
-            fsType = "zfs"; options = [ "zfsutil" ];
+            fsType = "zfs"; options = [ "zfsutil" ] ++ options;
           };
         zfsMountSpecs = pool: mountSpecs (zfsMountSpecAttr pool);
 
-        zfsPerHostMountSpecAttr = pool: { mountPoint, subDataset ? "" }:
+        zfsPerHostMountSpecAttr = pool: { mountPoint, subDataset ? "", options ? [] }:
           assert match datasetNameRegex subDataset != null;
           zfsMountSpecAttr pool {
-            inherit mountPoint;
+            inherit mountPoint options;
             subDataset = "/${hostName}${subDataset}";
           };
         zfsPerHostMountSpecs = pool: mountSpecs (zfsPerHostMountSpecAttr pool);
@@ -281,7 +281,10 @@ in
                    "/home/d"
                    "/home/z"
                    "/home/z/zone"
-           ])))
+              ])
+           ++ (map ({mountPoint, options}: { inherit mountPoint options; subDataset = mountPoint; }) [
+              ])
+          ))
 
           (zfsMountSpecs pools.main [
             { mountPoint = "/mnt/VMs"; subDataset = "/VMs"; }
