@@ -311,10 +311,11 @@ intended for rarely setting-up a new personal system only every few years or so
       4. Change `my.zfs.usersZvolsForVMs` to have equal-or-less-than the amount
          you created (in `EXTRA_DATASETS` in step 3.7) (if any), and change its
          elements to have your desired `owner` users.
-      5. Probably: Remove the various aspects that are specific to my system
-         that are not relevant to your system, and add aspects that your
-         specific system should have.  (Note that you can also make further
-         changes after installation, thanks to NixOS.)
+      5. Probably: Remove or change the various aspects, notably `users.users`
+         and `my.zfs.encryptedHomes` and hardware-specific options, that are
+         specific to my system that are not relevant to your system, and add
+         aspects that your system should have.  (Note that you can also make
+         further changes after installation, thanks to NixOS.)
 
    4. Stage your changes, for now:
       ```shell
@@ -414,6 +415,19 @@ intended for rarely setting-up a new personal system only every few years or so
           # { id = "5"; owner = ; }
           # { id = "6"; owner = ; }
           # { id = "7"; owner = ; }
+   @@ -103,12 +103,10 @@ in
+          isNormalUser = true;
+        };
+      in {
+   -    v = common;
+      };
+
+      my.zfs.encryptedHomes = {
+        noAuto = [
+   -      "/home/v"
+        ];
+      };
+
    ```
    with some unshown further larger removals in
    `per-host/$NEW_HOSTNAME/default.nix`, following step 5.3.5.

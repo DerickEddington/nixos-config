@@ -98,6 +98,20 @@ in
     zfs.requestEncryptionCredentials = false;  # Or could be a list of selected datasets.
   };
 
+  users.users = let
+    common = {
+      isNormalUser = true;
+    };
+  in {
+    v = common;
+  };
+
+  my.zfs.encryptedHomes = {
+    noAuto = [
+      "/home/v"
+    ];
+  };
+
   # When booting into emergency or rescue targets, do not require the password
   # of the root user to start a root shell.  I am ok with the security
   # consequences, for this host.  Do not blindly copy this without
