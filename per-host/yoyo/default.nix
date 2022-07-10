@@ -109,6 +109,7 @@ in
   my.zfs.encryptedHomes = {
     noAuto = [
       "/home/v"
+      "/home/v/old"
     ];
   };
 
