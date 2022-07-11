@@ -211,7 +211,6 @@ in
 
     environment = let
       with-unhidden-gitdir = import ./users/with-unhidden-gitdir.nix { inherit pkgs; };
-      myEmacs = import ./emacs.nix { inherit pkgs; };
       myFirefox = import ./firefox.nix { inherit pkgs; };
       # Reduced set of the Comix Cursors variants (don't want all of them).
       comixcursorsChosen =
@@ -223,7 +222,6 @@ in
     in {
       systemPackages = (with pkgs; [
         with-unhidden-gitdir
-        myEmacs
         myFirefox
       ] ++ [
         lsb-release
@@ -261,7 +259,7 @@ in
 
       variables = rec {
         # Use absolute paths for these, in case some usage does not use PATH.
-        VISUAL = "${myEmacs}/bin/emacs --no-window-system";
+        VISUAL = "${pkgs.nano}/bin/nano";  # (Note: My users usually change this to Emacs.)
         EDITOR = VISUAL;
         PAGER = "${pkgs.most}/bin/most";
         # Prevent Git from using SSH_ASKPASS (which NixOS always sets).  This is
