@@ -269,6 +269,8 @@ in
       };
     };
 
+    documentation.man.generateCaches = true;
+
     virtualisation.virtualbox = {
       host = {
         enable = true;
