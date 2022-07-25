@@ -72,6 +72,12 @@ chmod -v og-rwx .
 
     $CLONE_COMMAND --separate-git-dir=.dotfiles "$DOTFILES_ORIGIN" .
     git checkout -b user/"$USER" --no-track
+
+    # Ensure that the local user name is always used for commits to a user's
+    # ~/.dotfiles repository:
+    git config user.name "$USER"
+    git config user.email "$USER@$HOSTNAME"
+
     mv -v .git .git-hidden
 }
 
