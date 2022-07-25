@@ -672,11 +672,6 @@ intended for rarely setting-up a new personal system only every few years or so
        for U in ${DO_USERS[@]}; do
          echo -e "\n\n\nSetting-up home for user $U ..."
          sudo-u /etc/nixos/users/setup-home
-
-         # Optional: Ensure that the local user name is always used for commits
-         # to a user's `~/.dotfiles` repository:
-         sudo-u git --git-dir=.dotfiles config user.name $U
-         sudo-u git --git-dir=.dotfiles config user.email $U@$HOSTNAME
        done
 
        unset -f sudo-u
