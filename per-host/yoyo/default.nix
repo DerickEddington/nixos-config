@@ -220,4 +220,10 @@ in
   # set the NIX_DEBUG_INFO_DIRS environment variable to include them, for GDB to
   # find them.
   environment.enableDebugInfo = true;
+
+  # Enable Docker, run by non-root users.
+  virtualisation.docker.rootless = {
+    enable = true;
+    setSocketVariable = true;
+  };
 }
