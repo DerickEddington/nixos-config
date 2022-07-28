@@ -5,8 +5,8 @@
 
 let
   inherit (builtins)
-    all attrNames attrValues catAttrs concatStringsSep elem elemAt length
-    listToAttrs match pathExists;
+    all attrNames attrValues catAttrs concatStringsSep elem elemAt
+    isAttrs length listToAttrs match pathExists;
   inherit (lib) mkMerge mkOption types;
   inherit (lib.lists) imap1 unique;
   inherit (lib.attrsets) filterAttrs;
@@ -86,7 +86,7 @@ in
 
       encryptedHomes = {
         noAuto = mkOption {
-          type = listOf (strMatching datasetNameRegex);
+          type = listOf (either (strMatching datasetNameRegex) (attrsOf str));
           default = [];
         };
       };
@@ -261,6 +261,10 @@ in
             fsType = "vfat"; options = [ "x-systemd.idle-timeout=1min" "x-systemd.automount" "noauto" ];
           };
         efiMountSpecs = drives: mountSpecs efiMountSpecAttr drives;
+
+        mkMountSpec = extra @ { ... }: spec: let
+          attrs = if isAttrs spec then spec else { mountPoint = spec; subDataset = spec; };
+        in extra // attrs;
       in
         mkMerge [
           (zfsPerHostMountSpecs pools.boot [
@@ -272,7 +276,7 @@ in
              { mountPoint = "/mnt/archive"; subDataset = "/archive"; }
              { mountPoint = "/mnt/records"; subDataset = "/records"; }
            ]
-           ++ (map (mountPoint: { inherit mountPoint; subDataset = mountPoint; }) [
+           ++ (map (mkMountSpec {}) [
                    "/home"
                    "/nix"
                    "/srv"
@@ -289,7 +293,7 @@ in
                    "/home/z"
                    "/home/z/zone"
               ])
-           ++ (map (mountPoint: { inherit mountPoint; subDataset = mountPoint; options = ["noauto"]; }) ([
+           ++ (map (mkMountSpec { options = ["noauto"]; }) ([
               ] ++ encryptedHomes.noAuto))
           ))
 
