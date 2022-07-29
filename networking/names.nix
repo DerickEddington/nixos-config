@@ -12,6 +12,16 @@ in
   options.my = let
     inherit (lib) mkOption;
   in {
+    DNSservers = mkOption {
+      description = ''
+        Ancillary list of the host's current DNS servers.
+        Should be set to reflect what they were elsewhere configured to be.
+        Does not define what DNS servers are used by the host.
+        Only used by my config where a concrete value must be given.
+      '';
+      type = types.listOf types.str;
+      default = config.networking.nameservers;
+    };
     nameResolv = {
       multicast = mkOption {
         type = types.bool;
@@ -31,9 +41,9 @@ in
   };
 
   config = let
-    inherit (config.my) nameResolv publish;
+    inherit (config.my) DNSservers nameResolv publish;
     inherit (config.services) avahi resolved;
-    inherit (config.networking) networkmanager;
+    inherit (config.networking) nameservers networkmanager;
     # Avahi and systemd-resolved coexistence.
     isAvahiMDNSresponder =
       avahi.enable && avahi.publish.enable;
@@ -48,6 +58,9 @@ in
       matchResolvedConfOption = conf: opt: val:
         (match "(^|.*\n)( *${opt} *= *${val} *)($|\n.*)" conf) != null;
     in [{
+      assertion = nameservers != [] -> DNSservers == nameservers;
+      message = "Ancillary list of DNS servers does not reflect the manually-defined list.";
+    } {
       # Prevent having both systemd-resolved and Avahi as mDNS responders at the same time,
       # because, while it might work, there would be redundant double responses sent out (I
       # think).

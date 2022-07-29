@@ -151,6 +151,13 @@ in
     };
   };
 
+  # This only reflects the DNS servers that are configured elsewhere by DHCP.
+  # This does not define the DNS servers.
+  my.DNSservers = let
+    home-router = "192.168.11.1";
+  in
+    [ home-router ];
+
   # If in a situation where an upstream DNS server does not support DNSSEC
   # (i.e. cannot even proxy DNSSEC-format datagrams), this could be defined so
   # that DNS should still work.
