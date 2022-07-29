@@ -231,6 +231,5 @@ in
   # Enable Docker, run by non-root users.
   virtualisation.docker.rootless = {
     enable = true;
-    setSocketVariable = true;
   };
 }
