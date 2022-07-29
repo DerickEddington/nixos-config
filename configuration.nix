@@ -255,7 +255,12 @@ in
           material-design-icons
         ]) else [
           transmission
-        ]));
+        ]) ++ (with config.virtualisation.docker.rootless;
+          (optionals (    enable
+                       && (    !(daemon.settings ? storage-driver)
+                            || daemon.settings.storage-driver == "fuse-overlayfs")) [
+            fuse-overlayfs
+          ])));
 
       variables = rec {
         # Use absolute paths for these, in case some usage does not use PATH.
@@ -276,6 +281,45 @@ in
         enable = true;
         enableExtensionPack = true;
       };
+    };
+
+    # Docker run by non-root users.  When enabled, each user runs their own
+    # daemon that stores under the user's home.  Not enabled here (default is
+    # disabled).
+    virtualisation.docker.rootless = {
+      setSocketVariable = true;
+      daemon.settings = {
+        # Works on top of any FS, but is inefficient.
+      # storage-driver = "vfs";
+
+        # As of 2022-07-27 with NixOS 22.05.1988, fuse-overlayfs is broken,
+        # seemingly due to fusermount being one of the special setuid-wrappers
+        # that NixOS has and this wrapper program has assertions and one of them
+        # (unknown which) fails for some unknown reason and causes the program
+        # to abort and crash, which breaks its use with Docker.
+      # storage-driver = "fuse-overlayfs";
+
+        # Doesn't work on top of ZFS (at least, not until OpenZFS supports it),
+        # but can make a zvol (e.g. as a sub dataset of an encrypted home
+        # dataset, so it's also encrypted) and make an ext4 FS on that zvol,
+        # since overlay2 is supported on top of ext4, and mount that on
+        # ~/.local/share/docker/.
+        storage-driver = "overlay2";
+
+        dns = config.my.DNSservers;
+      };
+    };
+
+    # Might be needed if fuse-overlayfs were used above, but not sure.
+  # programs.fuse.userAllowOther = config.virtualisation.docker.rootless.daemon.settings.storage-driver == "fuse-overlayfs";
+
+    # This is the Unit for `virtualisation.docker.rootless` above.
+    systemd.user.services.docker = {
+      # By default, do not auto-start it for all users.
+      # A user can auto-start it via their Home Manager configuration by:
+      # `my.rootlessDocker.autoStart = true`
+      # (see ./users/dotfiles/.config/nixpkgs/home/common/rootless-docker.nix)
+      wantedBy = lib.mkForce [];
     };
 
     nix = {
