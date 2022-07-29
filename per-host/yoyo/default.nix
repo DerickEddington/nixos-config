@@ -4,6 +4,7 @@
 
 let
   inherit (builtins) elem;
+  inherit (lib) mkIf;
   inherit (lib.lists) optional;
   inherit (lib.strings) optionalString;
 in
@@ -151,12 +152,15 @@ in
     };
   };
 
-  # This only reflects the DNS servers that are configured elsewhere by DHCP.
+  # This only reflects the DNS servers that are configured elsewhere (e.g. by DHCP).
   # This does not define the DNS servers.
+  # Try to avoid using this, because it hard-codes assumption about where I'm at.
+  # If it must be used occasionally, remember you can `nixos-rebuild test` for ephemeral changes.
   my.DNSservers = let
     home-router = "192.168.11.1";
   in
-    [ home-router ];
+    mkIf false
+      [ home-router ];
 
   # If in a situation where an upstream DNS server does not support DNSSEC
   # (i.e. cannot even proxy DNSSEC-format datagrams), this could be defined so
@@ -249,4 +253,10 @@ in
   virtualisation.docker.rootless = {
     enable = true;
   };
+
+  my.resolvedExtraListener =
+    mkIf config.virtualisation.docker.rootless.enable
+      # Choose an address that should be very unlikely to conflict with what
+      # anything else needs to use.
+      "192.168.255.53";
 }

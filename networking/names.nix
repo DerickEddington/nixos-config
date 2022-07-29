@@ -4,8 +4,9 @@
 
 let
   inherit (builtins) all hasAttr match;
-  inherit (lib) mkDefault optionals types;
+  inherit (lib) mkDefault mkIf optionals types;
   inherit (lib.lists) flatten;
+  inherit (lib.strings) optionalString;
 in
 
 {
@@ -38,10 +39,14 @@ in
         default = config.my.publish.hostAspects;
       };
     };
+    resolvedExtraListener = mkOption {
+      type = types.nullOr types.str;
+      default = null;
+    };
   };
 
   config = let
-    inherit (config.my) DNSservers nameResolv publish;
+    inherit (config.my) DNSservers nameResolv publish resolvedExtraListener;
     inherit (config.services) avahi resolved;
     inherit (config.networking) nameservers networkmanager;
     # Avahi and systemd-resolved coexistence.
@@ -134,6 +139,28 @@ in
           # Settings.Hidden = true;
         };
       };
+
+      # Assign an additional IP address (an alias), that is not in the reserved
+      # loopback block (127.0.0.0/8), to the loopback device, so that our extra
+      # listener of systemd-resolved at this address has an interface as needed,
+      # and so that this interface is the loopback like usual.  This is
+      # especially useful to enable containers (e.g. Docker) to route IP packets
+      # to the host's loopback interface, which is especially useful to enable
+      # containers to use the host's systemd-resolved for DNS.
+      interfaces.lo = mkIf (resolvedExtraListener != null && resolvedExtraListener != "") {
+        ipv4 = let
+          prefixLength = 32;  # As narrow as possible - for only the exact address.
+        in {
+          # TODO: This will have "global" scope but that is inconsistent with
+          # the "host" scope that the normal loopback addresses have.  Is this
+          # ok since it's still the same loopback device that is not reachable
+          # outside the host?  The solution would be for this NixOS
+          # option-submodule to support an additional "options" option where the
+          # "scope" could be given, like
+          # `networking.interfaces.<name>.ipv4.routes.*.options` does.
+          addresses = [{ address = resolvedExtraListener; inherit prefixLength; }];
+        };
+      };
     };
 
     services = {
@@ -208,7 +235,14 @@ in
           # name(s) are not resolvable via other "zero-config" (LLMNR)
           # responders.
           # ResolveUnicastSingleLabel=true
-        '';
+
+        '' + (optionalString (resolvedExtraListener != null) ''
+          # Make systemd-resolved listen on this additional address.
+          # Especially useful for enabling Docker containers to use the host's
+          # systemd-resolved (in conjunction with
+          # `virtualisation.docker.rootless.dns`).
+          DNSStubListenerExtra=${resolvedExtraListener}
+        '');
 
         # Enable Link-Local Multicast Name Resolution (LLMNR).
         llmnr = multicastMode;  # (Avahi can't do LLMNR, so simpler.)
