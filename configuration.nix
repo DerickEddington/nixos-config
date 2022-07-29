@@ -2,7 +2,7 @@
 
 let
   inherit (builtins) elem readFile substring;
-  inherit (lib) getName mkDefault mkOption types;
+  inherit (lib) getName mkDefault mkIf mkOption types;
   inherit (lib.lists) optionals;
   inherit (lib.attrsets) cartesianProductOfSets;
 in
@@ -306,7 +306,11 @@ in
         # ~/.local/share/docker/.
         storage-driver = "overlay2";
 
-        dns = config.my.DNSservers;
+        dns = let
+          inherit (config.my) resolvedExtraListener;
+        in
+          mkIf (resolvedExtraListener != null && resolvedExtraListener != "")
+            [ resolvedExtraListener ];
       };
     };
 
