@@ -3,8 +3,8 @@
 { config, lib, ... }:
 
 let
-  inherit (builtins) all hasAttr match;
-  inherit (lib) mkDefault mkIf optionals types;
+  inherit (builtins) all elem hasAttr match;
+  inherit (lib) mkDefault mkIf mkMerge optionals types;
   inherit (lib.lists) flatten;
   inherit (lib.strings) optionalString;
 in
@@ -56,7 +56,13 @@ in
       isAvahiMDNSresponder && (avahi.publish.addresses || avahi.publish.domain);
     canResolvedBeMDNSresponder =
       ! isAvahiMDNSresponder;
-  in {
+
+    hasResolvedExtraListener = resolvedExtraListener != null && resolvedExtraListener != "";
+    resolvedExtraListenerAddressSpec = {
+      address = resolvedExtraListener;
+      prefixLength = 32;  # Only the exact address.
+    };
+  in mkMerge [{
     assertions = let
       resolvedConf =
         config.environment.etc."systemd/resolved.conf".text;
@@ -137,28 +143,6 @@ in
         settings = {
           # # TODO: Needed/desired for using hidden SSIDs?
           # Settings.Hidden = true;
-        };
-      };
-
-      # Assign an additional IP address (an alias), that is not in the reserved
-      # loopback block (127.0.0.0/8), to the loopback device, so that our extra
-      # listener of systemd-resolved at this address has an interface as needed,
-      # and so that this interface is the loopback like usual.  This is
-      # especially useful to enable containers (e.g. Docker) to route IP packets
-      # to the host's loopback interface, which is especially useful to enable
-      # containers to use the host's systemd-resolved for DNS.
-      interfaces.lo = mkIf (resolvedExtraListener != null && resolvedExtraListener != "") {
-        ipv4 = let
-          prefixLength = 32;  # As narrow as possible - for only the exact address.
-        in {
-          # TODO: This will have "global" scope but that is inconsistent with
-          # the "host" scope that the normal loopback addresses have.  Is this
-          # ok since it's still the same loopback device that is not reachable
-          # outside the host?  The solution would be for this NixOS
-          # option-submodule to support an additional "options" option where the
-          # "scope" could be given, like
-          # `networking.interfaces.<name>.ipv4.routes.*.options` does.
-          addresses = [{ address = resolvedExtraListener; inherit prefixLength; }];
         };
       };
     };
@@ -257,5 +241,37 @@ in
         dnssec = mkDefault "true";
       };
     };
-  };
+  } (mkIf hasResolvedExtraListener {
+    # Assign an additional IP address (an alias), that is not in the reserved
+    # loopback block (127.0.0.0/8), to the loopback device, so that our extra
+    # listener of systemd-resolved at this address has an interface as needed,
+    # and so that this interface is the loopback like usual.  This is especially
+    # useful to enable containers (e.g. Docker) to route IP packets to the
+    # host's loopback interface, which is especially useful to enable containers
+    # to use the host's systemd-resolved for DNS.
+    networking.interfaces.lo = {
+      ipv4 = {
+        addresses = [ resolvedExtraListenerAddressSpec ];
+      };
+    };
+
+    # Hack to make our `resolvedExtraListener` have the "host" scope that a
+    # loopback address should have.  Otherwise, it would have "global" scope but
+    # that would be inconsistent with the other loopback addresses.  To instead
+    # not have this hack, the solution would be for the NixOS
+    # `networking.interfaces.<name>.ipv4.addresses` option-submodule to support
+    # an additional `options` option where the `"scope"` could be given, like
+    # `networking.interfaces.<name>.ipv4.routes.*.options` does.
+    systemd.services.network-addresses-lo.postStart =
+      assert elem resolvedExtraListenerAddressSpec
+                  config.networking.interfaces.lo.ipv4.addresses;
+      (let
+        cidr = "${resolvedExtraListener}/${toString resolvedExtraListenerAddressSpec.prefixLength}";
+      in ''
+        echo -n 'changing scope of address ${cidr} to "host" scope ...'
+        ip addr del "${cidr}" dev lo 2>&1
+        ip addr add "${cidr}" scope host dev lo 2>&1
+        echo "done"
+      '');
+  })];
 }
