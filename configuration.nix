@@ -176,8 +176,6 @@ in
     };
 
     fonts = {
-      # fontconfig.dpi = config.services.xserver.dpi;
-
       enableDefaultFonts = true;
       fonts = with pkgs; [
         ubuntu_font_family

@@ -215,6 +215,12 @@ in
         # (The kernel names this same monitor HDMI-A-1 for some reason.)
         output = "HDMI-A-0";
         primary = true;
+        # This DisplaySize corresponds to my current external monitor which is a Philips 346B.
+        # This value corresponds to what the device itself reports.
+        # If this were not defined here, then `xdpyinfo` would have incorrect 96 DPI.
+        monitorConfig = ''
+          DisplaySize 797 334
+        ''
         # This Modeline is not what the cvt nor gtf utilities give, because what
         # they give (which are a little different between the two) for 100 Hz
         # causes my monitor to fallback to 60 Hz for some reason.  This Modeline
@@ -222,16 +228,18 @@ in
         # 100 Hz works and the monitor does not switch modes when switching
         # users or switching virtual consoles (in conjunction with the video
         # argument in kernelParams above).
-        monitorConfig = optionalString (elem "video=HDMI-A-1:3440x1440@100" config.boot.kernelParams) ''
+        + (optionalString (elem "video=HDMI-A-1:3440x1440@100" config.boot.kernelParams) ''
           Modeline "3440x1440@100.0"  543.50  3440 3488 3552 3600  1440 1443 1453 1510 -hsync +vsync
           Option "PreferredMode" "3440x1440@100.0"
-        '';
+        '');
       }
     ] ++ (optional (!(elem "video=eDP-1:d" config.boot.kernelParams)) {
       output = "eDP";
     });
 
-    # Firefox doesn't honor, but MATE would.
+    # This DPI corresponds to my current external monitor which is a Philips 346B.  Unset because
+    # it's unneeded with the DisplaySize above and because it'd cause the driver to use a slightly
+    # inconsistent value (794x332) for the display size.
     # dpi = 110;
   };
 
