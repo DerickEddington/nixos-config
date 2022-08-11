@@ -238,6 +238,7 @@ in
         aspell aspellDicts.en aspellDicts.en-computers aspellDicts.en-science
         cifs-utils
         sshfs
+        bind.dnsutils
       ] ++ (if config.services.xserver.enable then (
         (optionals config.services.xserver.desktopManager.mate.enable [
           libreoffice
