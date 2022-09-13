@@ -241,6 +241,8 @@ in
         cifs-utils
         sshfs
         bind.dnsutils
+        pwgen
+        socat
       ] ++ (if config.services.xserver.enable then (
         (optionals config.services.xserver.desktopManager.mate.enable [
           libreoffice
