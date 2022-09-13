@@ -218,10 +218,12 @@ in
             hand = [ "" "LH_" ];
           });
     in {
-      systemPackages = (with pkgs; [
+      systemPackages = [
         with-unhidden-gitdir
         myFirefox
-      ] ++ [
+      ] ++ (optionals config.services.xserver.enable
+        comixcursorsChosen
+      ) ++ (with pkgs; [
         lsb-release
         man-pages
         man-pages-posix
@@ -245,9 +247,7 @@ in
           rhythmbox
           transmission-gtk
           mate.mate-icon-theme-faenza
-        ]) ++
-        comixcursorsChosen
-        ++ [
+        ]) ++ [
           pop-icon-theme
           materia-theme
           material-icons
