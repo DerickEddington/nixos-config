@@ -235,6 +235,7 @@ in
         unzip
         gnupg
         ripgrep
+        fd
         file
         screen
         aspell aspellDicts.en aspellDicts.en-computers aspellDicts.en-science
