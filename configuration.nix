@@ -67,7 +67,13 @@ in
       };
       z = common;
       banking = common;
-      bills = common;
+      bills = common // {
+        extraGroups = [ "bills" ];
+      };
+    };
+
+    users.groups = {
+      bills = {};
     };
 
     networking = {
