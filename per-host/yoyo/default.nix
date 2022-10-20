@@ -3,7 +3,7 @@
 { config, pkgs, lib, ... }:
 
 let
-  inherit (builtins) elem;
+  inherit (builtins) elem pathExists;
   inherit (lib) mkIf;
   inherit (lib.lists) optional;
   inherit (lib.strings) optionalString;
@@ -22,7 +22,8 @@ in
                  import (fetchTarball https://github.com/blitz/tuxedo-nixos/archive/master.tar.gz);
      in
        ext-tcc.module)
-  ];
+  ]
+  ++ (optional (pathExists ./private.nix) ./private.nix);
 
   # TODO?: Maybe some options.my.xserver that fit my laptop's different GPUs and
   # display outputs and my monitor, which formalize how I want each combination
