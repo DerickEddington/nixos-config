@@ -3,10 +3,20 @@
 { config, lib, ... }:
 
 let
-  inherit (builtins) all elem hasAttr match;
+  inherit (builtins) all concatStringsSep elem hasAttr match;
   inherit (lib) mkDefault mkIf mkMerge optionals types;
+  inherit (lib.attrsets) mapAttrs';
   inherit (lib.lists) flatten;
   inherit (lib.strings) optionalString;
+
+  trustAnchorsFileNameValuePair = polarity:
+    assert elem polarity ["positive" "negative"];
+    (n: v: {
+      name = "dnssec-trust-anchors.d/${n}.${polarity}";
+      value = { text = concatStringsSep "\n" v; };
+    });
+  trustAnchorsFiles = polarity: trustAnchorsAttrs:
+    mapAttrs' (trustAnchorsFileNameValuePair polarity) trustAnchorsAttrs;
 in
 
 {
@@ -43,10 +53,79 @@ in
       type = types.nullOr types.str;
       default = null;
     };
+    DNSSEC = {
+      trustAnchors = {
+        negative = mkOption {
+          description = ''
+            Custom negative trust anchors (NTAs) to partially disable DNSSEC validation.
+            Each NTA is a domain name of a DNS subtree to disable validation for.
+            Each attribute creates its own /etc/dnssec-trust-anchors.d/$NAME.negative file
+            containing the elements (NTAs) of its list value.
+            These apply globally to all network links (per-link is configured differently).
+            It is often better to keep these as narrow as possible
+            (e.g. "d.c.b.a.com" versus "a.com"), and so it's often better to have multiple
+            versus one (e.g. "d.c.b.a.com" and "f.e.b.a.com" versus only "b.a.com").
+          '';
+          example = { job-vpn = ["funky.vpc.internal.acme.com"]; };
+          type = types.attrsOf (types.listOf types.str);
+          default = {};
+        };
+        keepDefault = {
+          negative = mkOption {
+            description = ''
+              NTAs to also add when my.DNSSEC.trustAnchors.negative is non-empty.
+              This is needed because having one-or-more non-empty
+              /etc/dnssec-trust-anchors.d/*.negative file(s) causes `resolved` to not use its
+              built-in default set of NTAs, but usually you want to keep its default also.
+              The default value of this option is the same as the built-in default of
+              systemd as of v250.4.
+              If the value is set to empty, then nothing is added.
+            '';
+            example = {};
+            type = types.attrsOf (types.listOf types.str);
+            default = {
+              # Hopefully this almost never needs to be updated.
+              # TODO: It'd be better to instead somehow generate this automatically from the
+              # currently-used version of systemd.
+              same-as-systemd-default = [
+                "home.arpa"
+                "10.in-addr.arpa"
+                "16.172.in-addr.arpa"
+                "17.172.in-addr.arpa"
+                "18.172.in-addr.arpa"
+                "19.172.in-addr.arpa"
+                "20.172.in-addr.arpa"
+                "21.172.in-addr.arpa"
+                "22.172.in-addr.arpa"
+                "23.172.in-addr.arpa"
+                "24.172.in-addr.arpa"
+                "25.172.in-addr.arpa"
+                "26.172.in-addr.arpa"
+                "27.172.in-addr.arpa"
+                "28.172.in-addr.arpa"
+                "29.172.in-addr.arpa"
+                "30.172.in-addr.arpa"
+                "31.172.in-addr.arpa"
+                "168.192.in-addr.arpa"
+                "d.f.ip6.arpa"
+                "corp"
+                "home"
+                "internal"
+                "intranet"
+                "lan"
+                "local"
+                "private"
+                "test"
+              ];
+            };
+          };
+        };
+      };
+    };
   };
 
   config = let
-    inherit (config.my) DNSservers nameResolv publish resolvedExtraListener;
+    inherit (config.my) DNSservers nameResolv publish resolvedExtraListener DNSSEC;
     inherit (config.services) avahi resolved;
     inherit (config.networking) nameservers networkmanager;
     # Avahi and systemd-resolved coexistence.
@@ -62,6 +141,9 @@ in
       address = resolvedExtraListener;
       prefixLength = 32;  # Only the exact address.
     };
+
+    hasCustomNTAs = DNSSEC.trustAnchors.negative != {};
+
   in mkMerge [{
     assertions = let
       resolvedConf =
@@ -273,5 +355,19 @@ in
         ip addr add "${cidr}" scope host dev lo 2>&1
         echo "done"
       '');
-  })];
+  }) (mkIf hasCustomNTAs (let
+    NTAsFiles = trustAnchorsFiles "negative";
+  in {
+    assertions = [{
+      assertion = hasCustomNTAs -> resolved.enable;
+      message = "Custom negative trust anchors are only supported with systemd-resolved";
+    }];
+    environment.etc = mkMerge [
+      (NTAsFiles DNSSEC.trustAnchors.negative)
+      # Another mkMerge element, to apply the option-merging logic for the possibility of
+      # same-name attributes, so that same-name attributes have their value lists of trust-anchors
+      # combined.
+      (NTAsFiles DNSSEC.trustAnchors.keepDefault.negative)
+    ];
+  }))];
 }
