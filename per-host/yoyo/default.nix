@@ -167,23 +167,6 @@ in
   # (i.e. cannot even proxy DNSSEC-format datagrams), this could be defined so
   # that DNS should still work.
   # services.resolved.dnssec = "allow-downgrade";  # Or "false".
-  #
-  # TODO: Temporary for allowing my job's VPN to work (which has a DNS that does
-  # not support DNSSEC-format datagrams, apparently).  Once I use systemd v251
-  # (probably not until NixOS 22.11, unless I can use it from `nixos-unstable`
-  # before then), this won't be needed, because that includes the fix for the
-  # bug https://github.com/systemd/systemd/issues/23227 , and then I can set
-  # this per-link to "off" for only the tun0 link (or whatever the VPN's link
-  # name is), and here this can go back to being commented-out (so that it's
-  # "true", as defined in ../../networking/names.nix).  Also, it seems like
-  # NetworkManager does not expose control of this (DNSSEC mode per-link), so
-  # I'll need to use NetworkManager-dispatcher to do something like
-  # https://askubuntu.com/questions/1310096/per-link-dns-over-tls-setting-networkmanager-systemd-resolved
-  services.resolved.dnssec = let
-    nixosVersion = lib.trivial.release;
-  in
-    assert lib.versionOlder nixosVersion "22.06";
-    lib.mkIf (lib.versionOlder pkgs.systemd.version "251") "allow-downgrade";
 
   # services.openssh.enable = true;
   # my.intended.netPorts.TCP = [22];
