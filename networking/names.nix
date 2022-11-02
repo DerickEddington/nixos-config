@@ -1,22 +1,60 @@
 # Aspects related to resolving and publishing host and service names.
 
-{ config, lib, ... }:
+{ config, pkgs, lib, ... }:
 
 let
   inherit (builtins) all concatStringsSep elem hasAttr match;
+  inherit (pkgs) writeShellScript;
   inherit (lib) mkDefault mkIf mkMerge optionals types;
-  inherit (lib.attrsets) mapAttrs';
+  inherit (lib.attrsets) mapAttrs' mapAttrsToList;
   inherit (lib.lists) flatten;
-  inherit (lib.strings) optionalString;
+  inherit (lib.strings) escapeShellArg escapeShellArgs optionalString;
 
   trustAnchorsFileNameValuePair = polarity:
     assert elem polarity ["positive" "negative"];
-    (n: v: {
-      name = "dnssec-trust-anchors.d/${n}.${polarity}";
-      value = { text = concatStringsSep "\n" v; };
+    (name: value: let
+      mnemonicName = name;
+      domainNames = value;
+    in {
+      name = "dnssec-trust-anchors.d/${mnemonicName}.${polarity}";
+      value = { text = concatStringsSep "\n" domainNames; };
     });
   trustAnchorsFiles = polarity: trustAnchorsAttrs:
     mapAttrs' (trustAnchorsFileNameValuePair polarity) trustAnchorsAttrs;
+
+  negativeTrustAnchorsNetworkManagerDispatcherScriptSpec = name: value: let
+    connectionID = name;
+    domainNames = value;
+  in {
+    type = "pre-up";
+    source = writeShellScript "my-networkmanager-dispatcher-script--${connectionID}" ''
+      readonly interface="$1"
+      readonly action="$2"
+      readonly domainNames=(${escapeShellArgs domainNames})
+
+      function log {
+        logger --tag nm-dispatch-script --priority daemon.info "$@"
+      }
+
+      case "$CONNECTION_ID" in
+        (${escapeShellArg connectionID})
+          case "$action" in
+            (pre-up | vpn-pre-up)
+              if resolvectl nta "$interface" "''${domainNames[@]}" ; then
+                log "Set NTAs for $interface to:" "''${domainNames[@]}"
+              else
+                log "Failed to set NTAs for $interface"
+              fi
+            ;;
+          esac
+        ;;
+      esac
+    '';
+  };
+  negativeTrustAnchorsNetworkManagerDispatcherScripts = connectionProfileNTAsAttrs:
+    mapAttrsToList
+      negativeTrustAnchorsNetworkManagerDispatcherScriptSpec
+      connectionProfileNTAsAttrs;
 in
 
 {
@@ -54,69 +92,94 @@ in
       default = null;
     };
     DNSSEC = {
-      trustAnchors = {
-        negative = mkOption {
-          description = ''
-            Custom negative trust anchors (NTAs) to partially disable DNSSEC validation.
-            Each NTA is a domain name of a DNS subtree to disable validation for.
-            Each attribute creates its own /etc/dnssec-trust-anchors.d/$NAME.negative file
-            containing the elements (NTAs) of its list value.
-            These apply globally to all network links (per-link is configured differently).
-            It is often better to keep these as narrow as possible
-            (e.g. "d.c.b.a.com" versus "a.com"), and so it's often better to have multiple
-            versus one (e.g. "d.c.b.a.com" and "f.e.b.a.com" versus only "b.a.com").
-          '';
-          example = { job-vpn = ["funky.vpc.internal.acme.com"]; };
-          type = types.attrsOf (types.listOf types.str);
-          default = {};
+      trustAnchors = let
+        commonDescription = {
+          negative = {
+            start = ''
+              Custom negative trust anchors (NTAs) to partially disable DNSSEC validation.
+              Each NTA is a domain name of a DNS subtree to disable validation for.'';
+            end = ''
+              It is often better to keep these as narrow as possible
+              (e.g. "d.c.b.a.com" versus "a.com"), and so it's often better to have multiple
+              versus one (e.g. "d.c.b.a.com" and "f.e.b.a.com" versus only "b.a.com").'';
+          };
         };
-        keepDefault = {
+      in {
+        perLink = {
           negative = mkOption {
             description = ''
-              NTAs to also add when my.DNSSEC.trustAnchors.negative is non-empty.
-              This is needed because having one-or-more non-empty
-              /etc/dnssec-trust-anchors.d/*.negative file(s) causes `resolved` to not use its
-              built-in default set of NTAs, but usually you want to keep its default also.
-              The default value of this option is the same as the built-in default of
-              systemd as of v250.4.
-              If the value is set to empty, then nothing is added.
+              ${commonDescription.negative.start}
+              Each attribute's name is the name of a connection profile of NetworkManager,
+              and its value is a list of NTAs that apply only to the corresponding network link
+              (global is configured differently).
+              ${commonDescription.negative.end}
             '';
-            example = {};
+            example = { "Job VPN" = ["funky.vpc.internal.acme.com"]; };
             type = types.attrsOf (types.listOf types.str);
-            default = {
-              # Hopefully this almost never needs to be updated.
-              # TODO: It'd be better to instead somehow generate this automatically from the
-              # currently-used version of systemd.
-              same-as-systemd-default = [
-                "home.arpa"
-                "10.in-addr.arpa"
-                "16.172.in-addr.arpa"
-                "17.172.in-addr.arpa"
-                "18.172.in-addr.arpa"
-                "19.172.in-addr.arpa"
-                "20.172.in-addr.arpa"
-                "21.172.in-addr.arpa"
-                "22.172.in-addr.arpa"
-                "23.172.in-addr.arpa"
-                "24.172.in-addr.arpa"
-                "25.172.in-addr.arpa"
-                "26.172.in-addr.arpa"
-                "27.172.in-addr.arpa"
-                "28.172.in-addr.arpa"
-                "29.172.in-addr.arpa"
-                "30.172.in-addr.arpa"
-                "31.172.in-addr.arpa"
-                "168.192.in-addr.arpa"
-                "d.f.ip6.arpa"
-                "corp"
-                "home"
-                "internal"
-                "intranet"
-                "lan"
-                "local"
-                "private"
-                "test"
-              ];
+            default = {};
+          };
+        };
+        global = {
+          negative = mkOption {
+            description = ''
+              ${commonDescription.negative.start}
+              Each attribute creates its own /etc/dnssec-trust-anchors.d/$NAME.negative file
+              containing the elements (NTAs) of its list value.
+              These apply globally to all network links (per-link is configured differently).
+              ${commonDescription.negative.end}
+            '';
+            example = { job-vpn = ["funky.vpc.internal.acme.com"]; };
+            type = types.attrsOf (types.listOf types.str);
+            default = {};
+          };
+          keepDefault = {
+            negative = mkOption {
+              description = ''
+                NTAs to also add when my.DNSSEC.trustAnchors.global.negative is non-empty.
+                This is needed because having one-or-more non-empty
+                /etc/dnssec-trust-anchors.d/*.negative file(s) causes `resolved` to not use its
+                built-in default set of NTAs, but usually you want to keep its default also.
+                The default value of this option is the same as the built-in default of
+                systemd as of v250.4.
+                If the value is set to empty, then nothing is added.
+              '';
+              example = {};
+              type = types.attrsOf (types.listOf types.str);
+              default = {
+                # Hopefully this almost never needs to be updated.
+                # TODO: It'd be better to instead somehow generate this automatically from the
+                # currently-used version of systemd.
+                same-as-systemd-default = [
+                  "home.arpa"
+                  "10.in-addr.arpa"
+                  "16.172.in-addr.arpa"
+                  "17.172.in-addr.arpa"
+                  "18.172.in-addr.arpa"
+                  "19.172.in-addr.arpa"
+                  "20.172.in-addr.arpa"
+                  "21.172.in-addr.arpa"
+                  "22.172.in-addr.arpa"
+                  "23.172.in-addr.arpa"
+                  "24.172.in-addr.arpa"
+                  "25.172.in-addr.arpa"
+                  "26.172.in-addr.arpa"
+                  "27.172.in-addr.arpa"
+                  "28.172.in-addr.arpa"
+                  "29.172.in-addr.arpa"
+                  "30.172.in-addr.arpa"
+                  "31.172.in-addr.arpa"
+                  "168.192.in-addr.arpa"
+                  "d.f.ip6.arpa"
+                  "corp"
+                  "home"
+                  "internal"
+                  "intranet"
+                  "lan"
+                  "local"
+                  "private"
+                  "test"
+                ];
+              };
             };
           };
         };
@@ -142,9 +205,13 @@ in
       prefixLength = 32;  # Only the exact address.
     };
 
-    hasCustomNTAs = DNSSEC.trustAnchors.negative != {};
+    hasCustomNTAs.global  = DNSSEC.trustAnchors.global.negative  != {};
+    hasCustomNTAs.perLink = DNSSEC.trustAnchors.perLink.negative != {};
 
-  in mkMerge [{
+  in mkMerge [
+
+  # Interrelated name-resolution
+  {
     assertions = let
       resolvedConf =
         config.environment.etc."systemd/resolved.conf".text;
@@ -323,7 +390,10 @@ in
         dnssec = mkDefault "true";
       };
     };
-  } (mkIf hasResolvedExtraListener {
+  }
+
+  # Extra systemd-resolved listener
+  (mkIf hasResolvedExtraListener {
     # Assign an additional IP address (an alias), that is not in the reserved
     # loopback block (127.0.0.0/8), to the loopback device, so that our extra
     # listener of systemd-resolved at this address has an interface as needed,
@@ -355,19 +425,37 @@ in
         ip addr add "${cidr}" scope host dev lo 2>&1
         echo "done"
       '');
-  }) (mkIf hasCustomNTAs (let
+  })
+
+  # Custom global negative trust anchors
+  (mkIf hasCustomNTAs.global (let
     NTAsFiles = trustAnchorsFiles "negative";
+    inherit (DNSSEC.trustAnchors) global;
   in {
     assertions = [{
-      assertion = hasCustomNTAs -> resolved.enable;
-      message = "Custom negative trust anchors are only supported with systemd-resolved";
+      assertion = hasCustomNTAs.global -> resolved.enable;
+      message = "Custom global NTAs are only supported with systemd-resolved.";
     }];
     environment.etc = mkMerge [
-      (NTAsFiles DNSSEC.trustAnchors.negative)
+      (NTAsFiles global.negative)
       # Another mkMerge element, to apply the option-merging logic for the possibility of
       # same-name attributes, so that same-name attributes have their value lists of trust-anchors
       # combined.
-      (NTAsFiles DNSSEC.trustAnchors.keepDefault.negative)
+      (NTAsFiles global.keepDefault.negative)
     ];
-  }))];
+  }))
+
+  # Custom per-link negative trust anchors
+  (mkIf hasCustomNTAs.perLink (let
+    inherit (DNSSEC.trustAnchors) perLink;
+  in {
+    assertions = [{
+      assertion = hasCustomNTAs.perLink -> (resolved.enable && networkmanager.enable);
+      message = "Custom per-link NTAs are only supported with systemd-resolved and NetworkManager.";
+    }];
+    networking.networkmanager.dispatcherScripts =
+      negativeTrustAnchorsNetworkManagerDispatcherScripts perLink.negative;
+  }))
+
+  ];
 }
