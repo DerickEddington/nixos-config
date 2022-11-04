@@ -237,6 +237,7 @@ in
         most
         wget
         htop
+        lsof
       # git  # Installed via above programs.git.enable
         unzip
         gnupg
