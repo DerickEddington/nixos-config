@@ -241,7 +241,7 @@ in
         unzip
         gnupg
         ripgrep
-        fd
+        unstable.fd
         file
         screen
         aspell aspellDicts.en aspellDicts.en-computers aspellDicts.en-science
