@@ -4,7 +4,7 @@
 # this file.
 
 let
-  inherit (builtins) match;
+  inherit (builtins) elem match;
   isStableVersion =
     pkgs: isNull (match "pre.*" pkgs.lib.trivial.versionSuffix);
 in
@@ -21,4 +21,25 @@ in
           import <nixos-unstable> { inherit (self) config; };
       }
     else {})
+
+  # Subversion client with support for storing passwords in GNOME Keyring.
+  # TODO: Maybe contribute (something like) this to the official Nixpkgs package.
+  (self: super: let
+    flag = "--with-gnome-keyring";
+  in {
+    subversionClient = super.subversionClient.overrideAttrs (previousAttrs:
+      assert ! (elem flag previousAttrs.configureFlags);
+      {
+        nativeBuildInputs = previousAttrs.nativeBuildInputs ++ [self.pkg-config self.makeWrapper];
+        buildInputs       = previousAttrs.buildInputs       ++ [self.libsecret];
+        configureFlags    = previousAttrs.configureFlags    ++ [flag];
+        postFixup =
+          assert ! (previousAttrs ? postFixup);
+          ''
+            for x in $out/bin/*; do
+              wrapProgram $x --prefix LD_LIBRARY_PATH : $out/lib
+            done
+          '';
+      });
+  })
 ]
