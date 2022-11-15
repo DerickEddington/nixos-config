@@ -257,6 +257,7 @@ in
           rhythmbox
           transmission-gtk
           mate.mate-icon-theme-faenza
+          gnome.gucharmap gnome.gnome-characters
         ]) ++ [
           pop-icon-theme
           materia-theme
