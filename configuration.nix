@@ -99,6 +99,12 @@ in
       };
     };
 
+    security.pki.caCertificateBlacklist = [
+      "TrustCor ECA-1"
+      "TrustCor RootCert CA-1"
+      "TrustCor RootCert CA-2"
+    ];
+
     services = {
       # Enable the X11 windowing system.
       xserver = {
