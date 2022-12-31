@@ -337,7 +337,7 @@ in
     };
 
     nix = {
-      autoOptimiseStore = true;
+      settings.auto-optimise-store = true;
 
       gc = {
         # Note: This can result in redownloads when store items were not
