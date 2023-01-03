@@ -241,6 +241,10 @@ in
   # find them.
   environment.enableDebugInfo = true;
 
+  nix.settings = {
+    extra-experimental-features = "nix-command";
+  };
+
   # Enable Docker, run by non-root users.
   virtualisation.docker.rootless = {
     enable = true;
