@@ -230,12 +230,17 @@ in
             hand = [ "" "LH_" ];
           });
     in {
-      systemPackages = [
+      systemPackages =
+      # Those arranged above
+      [
         with-unhidden-gitdir
         myFirefox
-      ] ++ (optionals config.services.xserver.enable
+      ]
+      ++ (optionals config.services.xserver.enable
         comixcursorsChosen
-      ) ++ (with pkgs; [
+      )
+      # Those directly from `pkgs`
+      ++ (with pkgs; [
         lsb-release
         man-pages
         man-pages-posix
@@ -257,26 +262,30 @@ in
         bind.dnsutils
         pwgen
         socat
-      ] ++ (if config.services.xserver.enable then (
-        (optionals config.services.xserver.desktopManager.mate.enable [
-          libreoffice
-          rhythmbox
-          transmission-gtk
-          mate.mate-icon-theme-faenza
-          gnome.gucharmap gnome.gnome-characters
-        ]) ++ [
-          pop-icon-theme
-          materia-theme
-          material-icons
-          material-design-icons
-        ]) else [
-          transmission
-        ]) ++ (with config.virtualisation.docker.rootless;
-          (optionals (    enable
-                       && (    !(daemon.settings ? storage-driver)
-                            || daemon.settings.storage-driver == "fuse-overlayfs")) [
-            fuse-overlayfs
-          ])));
+      ]
+      # If GUI desktop is enabled
+      ++ (if config.services.xserver.enable then (
+      (optionals config.services.xserver.desktopManager.mate.enable [
+        libreoffice
+        rhythmbox
+        transmission-gtk
+        mate.mate-icon-theme-faenza
+        gnome.gucharmap gnome.gnome-characters
+      ]) ++ [
+        pop-icon-theme
+        materia-theme
+        material-icons
+        material-design-icons
+      ]) else [
+        transmission
+      ])
+      # If Docker is enabled
+      ++ (with config.virtualisation.docker.rootless;
+      (optionals (    enable
+                   && (    !(daemon.settings ? storage-driver)
+                        || daemon.settings.storage-driver == "fuse-overlayfs")) [
+        fuse-overlayfs
+      ])));
 
       variables = rec {
         # Use absolute paths for these, in case some usage does not use PATH.
