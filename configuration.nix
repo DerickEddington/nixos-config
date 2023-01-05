@@ -264,6 +264,7 @@ in
         bind.dnsutils
         pwgen
         socat
+        xorg.lndir  # (Independent of Xorg being installed (I think).)
         hello  # Can be useful to test debugging.
       ]
       # Source-code of packages
