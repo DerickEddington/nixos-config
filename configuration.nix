@@ -268,6 +268,7 @@ in
       ]
       # Source-code of packages
       ++ (map sourceCodeOfPackage [  # Requires the `pathsToLink = ["/src"]` below.
+        glibc
         hello
       ])
       # If GUI desktop is enabled
