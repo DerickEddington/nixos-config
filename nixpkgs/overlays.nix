@@ -42,4 +42,9 @@ in
           '';
       });
   })
+
+  # GNU Hello program with debug info.
+  (self: super: {
+    hello = self.enableDebugging super.hello;
+  })
 ]

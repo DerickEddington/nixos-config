@@ -264,9 +264,11 @@ in
         bind.dnsutils
         pwgen
         socat
+        hello  # Can be useful to test debugging.
       ]
       # Source-code of packages
       ++ (map sourceCodeOfPackage [  # Requires the `pathsToLink = ["/src"]` below.
+        hello
       ])
       # If GUI desktop is enabled
       ++ (if config.services.xserver.enable then (
