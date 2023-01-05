@@ -13,6 +13,7 @@ let
 in
 {
   imports = [
+    ./module-args.nix
     (./per-host + "/${hostName}")
     ./zfs.nix
     ./networking
