@@ -1,10 +1,11 @@
-{ config, options, pkgs, lib, ... }:
+{ config, options, pkgs, lib, myLib, ... }:
 
 let
   inherit (builtins) elem readFile substring;
   inherit (lib) getName mkDefault mkIf mkOption types;
   inherit (lib.lists) optionals;
   inherit (lib.attrsets) cartesianProductOfSets;
+  inherit (myLib) sourceCodeOfPackage;
 in
 
 let
@@ -264,6 +265,9 @@ in
         pwgen
         socat
       ]
+      # Source-code of packages
+      ++ (map sourceCodeOfPackage [  # Requires the `pathsToLink = ["/src"]` below.
+      ])
       # If GUI desktop is enabled
       ++ (if config.services.xserver.enable then (
       (optionals config.services.xserver.desktopManager.mate.enable [
@@ -287,6 +291,8 @@ in
                         || daemon.settings.storage-driver == "fuse-overlayfs")) [
         fuse-overlayfs
       ])));
+
+      pathsToLink = ["/src"];
 
       variables = rec {
         # Use absolute paths for these, in case some usage does not use PATH.

@@ -4,4 +4,5 @@
 { pkgs, lib }:
 
 {
+  sourceCodeOfPackage = import ./source-code-of-package.nix { inherit pkgs lib; };
 }
