@@ -1,10 +1,12 @@
 # Basic helpers that only can depend on the standard Nix `builtins`.
 
 let
-  inherit (builtins) any getEnv pathExists substring;
+  inherit (builtins) any elem getEnv pathExists substring;
 in
 
 {
+  isDisjoint = a: b: ! (any (e: elem e a) b);
+
   isAbsolutePath = strOrPath: "/" == (substring 0 1 "${toString strOrPath}");
 
   isDirWithDefault = path: pathExists (path + "/default.nix");

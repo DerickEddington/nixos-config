@@ -19,6 +19,7 @@ let
       {
         inherit limitedTo;
 
+        makeHelloTestPkg                = import ./make-hello-test-package.nix          propagate;
         pkgWithDebuggingSupport         = import ./package-with-debugging-support.nix   propagate;
         sourceCodeOfPkg                 = import ./source-code-of-package.nix           propagate;
       };
