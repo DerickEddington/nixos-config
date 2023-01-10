@@ -6,16 +6,19 @@
 # package and so there could be mismatches between the built package's binaries and the unpatched
 # source files.)
 
-{ pkgs, lib, ... }:
+{ pkgs, lib, myLib, ... }:
 
 let
-  inherit (builtins) elem elemAt intersectAttrs match;
+  inherit (builtins) elemAt intersectAttrs match;
   inherit (lib.attrsets) genAttrs;
+  inherit (myLib) pkgWithDebuggingSupport;
   inherit (pkgs) buildEnv;
 
   topDir = "src/of-pkg-via-my";
   namePrefixOfPrepared = "prepared-source-of";
 
+  # Make our result have only a single typical "out" output.  This avoids problems with some
+  # things trying to use the other unusual empty-file outputs of sourceCodeOnlyDerivation.
   encapsulateSingleOutput = drvOutput:
     assert drvOutput.outputSpecified or false;  # Must give an explicit output.
     buildEnv {
@@ -33,71 +36,36 @@ let
       in
         keep // { description = "Source-code of: ${drvOutput.description or "Something"}"; };
     };
+
+  commonArgs = {
+    sourceCode = true;
+    srcTopDir = topDir;
+  };
 in
 
-pkg:
+{
+  # Extend a package to also contain its source-code along with the rest of it, and optionally to
+  # be built with debug-info.
+  add = { debugInfo ? false }: pkg:
+    pkgWithDebuggingSupport
+      (commonArgs // {
+        namePrefix = "debugging-support-for";
+        inherit debugInfo;
+        omitUnneeded = false;
+      })
+      pkg;
 
-let
-  sourceCodeOnlyDerivation = pkg.overrideAttrs (origAttrs:
-    # I assume that "srcasused" is not an output name used by Nixpkgs and so I may use it myself.
-    assert (origAttrs ? outputs) -> (! elem "srcasused" origAttrs.outputs);
-
-    (let
-      rename = name: "${namePrefixOfPrepared}-${name}";
+  # Create a derivation containing only the source-code of the given package and nothing else.
+  only = pkg:
+    let
+      sourceCodeOnlyDerivation =
+        pkgWithDebuggingSupport
+          (commonArgs // {
+            namePrefix = namePrefixOfPrepared;
+            debugInfo = false;
+            omitUnneeded = true;
+          })
+          pkg;
     in
-      (if (origAttrs ? name)
-       then { name = rename origAttrs.name; }
-       else if (origAttrs ? pname)
-       then { pname = rename origAttrs.pname; }
-       else { pname = rename "unnamed"; })
-    ) // {
-      # Have our custom output as the default (first).  Keep the original outputs because they can
-      # affect how a package's source is prepared (e.g. _multioutConfig of Nixpkgs).
-      outputs = ["srcasused"] ++ (origAttrs.outputs or ["out"]);
-      # Only install our output.
-      meta.outputsToInstall = ["srcasused"];
-      # Prevent trying to handle a "debug" output.
-      separateDebugInfo = false;
-
-      # Use preBuildPhases because it's run after patchPhase,configurePhase,etc and it's run
-      # before buildPhase,etc, which allows us to capture the package's source-code in the state
-      # as prepared for the package.  Place my phase after any others of origAttrs.preBuildPhases,
-      # in case we should capture any changes those others might make.  Add my own phase as
-      # opposed to a hook, to avoid messing with other phases' hooks.
-      preBuildPhases = (origAttrs.preBuildPhases or []) ++ ["mySourceCodePackage_saveSrcPhase"];
-      # The main goal.  Copy the prepared source-code to our output.  Preserve its directory
-      # structure starting from its top, because that usually corresponds to the source-file-name
-      # paths recorded in the debug-info generated for the actual package's binaries, which
-      # enables debuggers like GDB to find these source files when
-      # /run/current-system/sw/src/of-pkg-via-my (or ~/.nix-profile/src/of-pkg-via-my, or
-      # ./result-srcasused/src/of-pkg-via-my, etc) is configured to be in the "source path" of the
-      # debugger (e.g. by ~/.gdbinit using `dir`).
-      mySourceCodePackage_saveSrcPhase = let
-        absoluteSourceRoot = "$NIX_BUILD_TOP/$sourceRoot";
-        destDir = "$srcasused/${topDir}/${absoluteSourceRoot}";
-      in ''
-        mkdir -v -p "$(dirname "${destDir}")"
-        echo "Copying ${absoluteSourceRoot} ..."
-        cp -a "${absoluteSourceRoot}" "${destDir}"
-      '';
-
-      # Skip all phases that are after the source-code has been prepared.
-      dontBuild = true;
-      doCheck = false;
-      dontInstall = true;
-      dontFixup = true;
-      doInstallCheck = false;
-      doDist = false;
-
-      # To satisfy the Nix building logic, all outputs must be produced.
-      # This also skips any origAttrs.postPhases, by not including those.
-      postPhases = ["mySourceCodePackage_makeOrigOutputsPhase"];
-      mySourceCodePackage_makeOrigOutputsPhase = ''
-        for o in $outputs ; do touch -a ''${!o} ; done
-      '';
-    });
-in
-
-# Make our result have only a single typical "out" output.  This avoids problems with some things
-# trying to use the other unusual empty-file outputs of sourceCodeOnlyDerivation.
-encapsulateSingleOutput sourceCodeOnlyDerivation.srcasused
+      encapsulateSingleOutput sourceCodeOnlyDerivation.srcasused;
+}

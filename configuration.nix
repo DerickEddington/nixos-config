@@ -269,7 +269,7 @@ in
         hello  # Can be useful to test debugging.
       ]
       # Source-code of packages
-      ++ (map sourceCodeOfPkg [  # Requires the `pathsToLink = ["/src"]` below.
+      ++ (map sourceCodeOfPkg.only [  # Requires the `pathsToLink = ["/src"]` below.
         glibc
         hello
       ])
