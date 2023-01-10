@@ -51,8 +51,16 @@ in
       });
   })
 
-  # GNU Hello program with debug info.
-  (self: super: {
-    hello = self.enableDebugging super.hello;
-  })
+  # Packages with debugging support.  This causes rebuilding of these.
+  (self: super: let
+    inherit (super) myLib;
+    inherit (deps self super) debuggingSupportConfig;
+
+    selection = {
+      inherit (super)
+        hello  # Have this to always exercise my Nix library for debugging support.
+        # You may add more here:
+      ;
+    };
+  in (myLib.pkgWithDebuggingSupport.byMyConfig debuggingSupportConfig).overlayResult selection)
 ]

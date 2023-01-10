@@ -236,10 +236,14 @@ in
 
   my.allowedUnfree = [ "hplip" ];
 
-  # Automatically install the "debug" output of packages if they have that, and
-  # set the NIX_DEBUG_INFO_DIRS environment variable to include them, for GDB to
-  # find them.
-  environment.enableDebugInfo = true;
+  # Have debug-info and source-code for packages where this is applied.  This is for packages that
+  # normally don't provide these, and this uses my custom approach that overrides and overlays
+  # packages to achieve having these.
+  my.debugging.support = {
+    all.enable = true;
+    sourceCode.of.prebuilt.packages = with pkgs; [
+    ];
+  };
 
   nix.settings = {
     extra-experimental-features = "nix-command";

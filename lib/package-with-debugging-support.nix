@@ -213,4 +213,24 @@ rec {
   # overlay function.
   overlayResult = args: pkgsSelection:
     mapAttrs (_name: pkg: byArgs args pkg) pkgsSelection;
+
+  # Converts a `my.debugging` option value and uses that as our types of arguments.
+  byMyConfig = dbgCfg: let
+    enable.debugInfo  = dbgCfg.debugInfo.of.locallyBuilt.enable  or false;
+    enable.sourceCode = dbgCfg.sourceCode.of.locallyBuilt.enable or false;
+    args = {
+      debugInfo = if enable.debugInfo then dbgCfg.debugInfo.of.locallyBuilt.how else false;
+      sourceCode = enable.sourceCode;
+    };
+  in {
+    __functor = _self: pkg: byArgs args pkg;  # Make this attribute set callable.
+
+    # pkgsSelection -> attrSet
+    overlayResult = let
+      needOverride = enable.debugInfo || enable.sourceCode;
+    in
+      (pkgsSelection:
+        mapAttrs (_name: pkg: if needOverride then (byArgs args pkg) else pkg)
+          pkgsSelection);
+  };
 }

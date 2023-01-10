@@ -1,11 +1,10 @@
-{ config, options, pkgs, lib, myLib, ... }:
+{ config, options, pkgs, lib, ... }:
 
 let
   inherit (builtins) elem readFile substring;
   inherit (lib) getName mkDefault mkIf mkOption types;
   inherit (lib.lists) optionals;
   inherit (lib.attrsets) cartesianProductOfSets;
-  inherit (myLib) sourceCodeOfPkg;
 in
 
 let
@@ -16,6 +15,7 @@ in
   imports = [
     ./module-args.nix
     (./per-host + "/${hostName}")
+    ./debugging.nix
     ./zfs.nix
     ./networking
   ];
@@ -219,6 +219,7 @@ in
       };
 
       overlays = import ./nixpkgs/overlays.nix (_self: _super: {
+                          debuggingSupportConfig = config.my.debugging.support;
                         });
     };
 
@@ -268,11 +269,6 @@ in
         xorg.lndir  # (Independent of Xorg being installed (I think).)
         hello  # Can be useful to test debugging.
       ]
-      # Source-code of packages
-      ++ (map sourceCodeOfPkg.only [  # Requires the `pathsToLink = ["/src"]` below.
-        glibc
-        hello
-      ])
       # If GUI desktop is enabled
       ++ (if config.services.xserver.enable then (
       (optionals config.services.xserver.desktopManager.mate.enable [
@@ -296,8 +292,6 @@ in
                         || daemon.settings.storage-driver == "fuse-overlayfs")) [
         fuse-overlayfs
       ])));
-
-      pathsToLink = ["/src"];
 
       variables = rec {
         # Use absolute paths for these, in case some usage does not use PATH.
