@@ -1,7 +1,8 @@
-# This file, being separate, enables using the same overlays for the NixOS
-# system configuration (which affects operations like nixos-rebuild) and for the
-# users' configurations (which affects operations like nix-env) that also import
-# this file.
+# This file, being separate, enables using the same overlays for the NixOS system configuration
+# (which affects operations like `nixos-rebuild`) and for the users' configurations (which affects
+# operations like `nix-env` and `home-manager`) that also import this file.
+
+deps:  # `deps` is a function that returns dependencies for here, given a `self` and `super` pair.
 
 let
   inherit (builtins) elem match;
@@ -21,6 +22,13 @@ in
           import <nixos-unstable> { inherit (self) config; };
       }
     else {})
+
+  # Provide my own library of helpers.
+  (self: super:
+    assert ! (super ? myLib);
+    {
+      myLib = import ../lib { pkgs = self; };
+    })
 
   # Subversion client with support for storing passwords in GNOME Keyring.
   # TODO: Maybe contribute (something like) this to the official Nixpkgs package.

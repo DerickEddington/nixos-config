@@ -1,8 +1,27 @@
-# My own library of helpers.
-# This can also be imported by users' ~/.config/nixpkgs/my/lib/.
+# My own library of helpers.  The dependencies (the arguments to this expression-file's function)
+# may be given as `null`, to support limited uses of the few parts of this library where those are
+# not needed.  This file may be `import`ed by other arbitrary uses independently of the NixOS
+# configuration evaluation or of the Nixpkgs evaluation.
 
-{ pkgs, lib }:
+{ pkgs ? import <nixpkgs> {}, lib ? pkgs.lib or null }:
 
-{
-  sourceCodeOfPackage = import ./source-code-of-package.nix { inherit pkgs lib; };
-}
+let
+  scope = rec {
+    propagate = { inherit pkgs lib myLib; };
+
+    limitedTo = {
+      builtins  = import ./limited-to-builtins.nix;     # Only allowed to depend on `builtins`.
+      lib       = import ./limited-to-lib.nix lib;      # Only allowed to depend on `lib`.
+    };
+
+    myLib =
+      limitedTo.builtins // limitedTo.lib //
+      {
+        inherit limitedTo;
+
+        sourceCodeOfPkg                 = import ./source-code-of-package.nix           propagate;
+      };
+  };
+in
+
+scope.myLib

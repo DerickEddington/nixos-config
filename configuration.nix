@@ -5,7 +5,7 @@ let
   inherit (lib) getName mkDefault mkIf mkOption types;
   inherit (lib.lists) optionals;
   inherit (lib.attrsets) cartesianProductOfSets;
-  inherit (myLib) sourceCodeOfPackage;
+  inherit (myLib) sourceCodeOfPkg;
 in
 
 let
@@ -218,7 +218,8 @@ in
         allowUnfreePredicate = pkg: elem (getName pkg) config.my.allowedUnfree;
       };
 
-      overlays = import ./nixpkgs/overlays.nix;
+      overlays = import ./nixpkgs/overlays.nix (_self: _super: {
+                        });
     };
 
     environment = let
@@ -268,7 +269,7 @@ in
         hello  # Can be useful to test debugging.
       ]
       # Source-code of packages
-      ++ (map sourceCodeOfPackage [  # Requires the `pathsToLink = ["/src"]` below.
+      ++ (map sourceCodeOfPkg [  # Requires the `pathsToLink = ["/src"]` below.
         glibc
         hello
       ])

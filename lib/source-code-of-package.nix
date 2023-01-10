@@ -6,7 +6,7 @@
 # package and so there could be mismatches between the built package's binaries and the unpatched
 # source files.)
 
-{ pkgs, lib }:
+{ pkgs, lib, ... }:
 
 let
   inherit (builtins) elem elemAt intersectAttrs match;
