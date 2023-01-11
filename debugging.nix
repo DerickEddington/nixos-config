@@ -32,6 +32,10 @@ in
             };
           };
         };
+        tmpDirs = mkOption {
+          description = "temporary directories for debug-info";
+          type = with types; listOf path;
+        };
       };
       sourceCode = {
         all.enable = mkEnableOption "source-code of all kinds of packages";
@@ -53,13 +57,17 @@ in
           };
           locallyBuilt.enable = mkEnableOption "source-code of some locally-built packages";
         };
+        tmpDirs = mkOption {
+          description = "temporary directories for source-code";
+          type = with types; listOf path;
+        };
       };
     };
   };
 
   config = let
     inherit (lib) mkDefault mkIf;
-    inherit (myLib) sourceCodeOfPkg;
+    inherit (myLib) makeTmpfilesRule sourceCodeOfPkg;
 
     cfg = config.my.debugging;
     enabled.anySourceCode = let inherit (cfg.support) sourceCode;
@@ -73,6 +81,9 @@ in
           all.enable = mkDefault cfg.support.all.enable;
           of.prebuilt.enable     = mkDefault cfg.support.debugInfo.all.enable;
           of.locallyBuilt.enable = mkDefault cfg.support.debugInfo.all.enable;
+          tmpDirs = mkDefault (if cfg.support.debugInfo.all.enable
+                               then [/tmp/debug /var/tmp/debug]
+                               else []);
         };
         sourceCode = {
           all.enable = mkDefault cfg.support.all.enable;
@@ -83,6 +94,9 @@ in
             };
             locallyBuilt.enable = mkDefault cfg.support.sourceCode.all.enable;
           };
+          tmpDirs = mkDefault (if cfg.support.sourceCode.all.enable
+                               then [/tmp/src /var/tmp/src]
+                               else []);
         };
       };
     };
@@ -91,6 +105,12 @@ in
       # Automatically install the "debug" output of packages if they have that, and set the
       # NIX_DEBUG_INFO_DIRS environment variable to include them, for GDB to find them.
       enableDebugInfo = cfg.support.debugInfo.of.prebuilt.enable;
+
+      # (Note: We don't care about the order of these when this merges with other definitions of
+      # this option, because debug-info is found by unique build-id and so any one of the
+      # directories which has it should work.)
+      variables.NIX_DEBUG_INFO_DIRS = mkIf (cfg.support.debugInfo.tmpDirs != [])
+        (map toString cfg.support.debugInfo.tmpDirs);
 
       systemPackages = mkIf cfg.support.sourceCode.of.prebuilt.enable
         (map sourceCodeOfPkg.only
@@ -101,5 +121,10 @@ in
       # /run/current-system/sw/src/.
       pathsToLink = mkIf enabled.anySourceCode ["/src"];
     };
+
+    systemd.tmpfiles.rules = let
+      mkRule = makeTmpfilesRule { mode = "1777"; user = "root"; group = "root"; };
+    in
+      (map mkRule cfg.support.debugInfo.tmpDirs) ++ (map mkRule cfg.support.sourceCode.tmpDirs);
   };
 }

@@ -20,6 +20,7 @@ let
         inherit limitedTo;
 
         makeHelloTestPkg                = import ./make-hello-test-package.nix          propagate;
+        makeTmpfilesRule                = import ./make-tmpfiles-rule.nix               propagate;
         pkgWithDebuggingSupport         = import ./package-with-debugging-support.nix   propagate;
         sourceCodeOfPkg                 = import ./source-code-of-package.nix           propagate;
       };
