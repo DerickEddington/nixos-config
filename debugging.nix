@@ -67,7 +67,8 @@ in
 
   config = let
     inherit (lib) mkDefault mkIf;
-    inherit (myLib) makeTmpfilesRule sourceCodeOfPkg;
+    inherit (myLib) sourceCodeOfPkg;
+    inherit (myLib.tmpfiles.debugging) mkDebugInfoDirPkg mkSourceCodeDirPkg;
 
     cfg = config.my.debugging;
     enabled.anySourceCode = let inherit (cfg.support) sourceCode;
@@ -122,9 +123,11 @@ in
       pathsToLink = mkIf enabled.anySourceCode ["/src"];
     };
 
-    systemd.tmpfiles.rules = let
-      mkRule = makeTmpfilesRule { mode = "1777"; user = "root"; group = "root"; };
+    systemd.tmpfiles.packages = let
+      ruleArgs = { mode = "1777"; user = "root"; group = "root"; };
+      use = f: p: (f ruleArgs p).pkg;
     in
-      (map mkRule cfg.support.debugInfo.tmpDirs) ++ (map mkRule cfg.support.sourceCode.tmpDirs);
+      (map (use mkDebugInfoDirPkg)  cfg.support.debugInfo.tmpDirs) ++
+      (map (use mkSourceCodeDirPkg) cfg.support.sourceCode.tmpDirs);
   };
 }
