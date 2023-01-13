@@ -15,6 +15,15 @@ As used for my personal laptop.
 - Multiple swap partitions, one per drive, not mirrored, for high-performance
   striped writing and reading.
 
+- Extra support for installing source-code and debug-info, according to your
+  choice, for debugging of binaries (executables & libraries) installed by Nix
+  packages which don't normally provide this (for both pre-built w/o rebuilding
+  or locally-built), and also for arbitrary binaries via dedicated temporary
+  directories.  Default installation of the source-code of the system's Glibc
+  and Rust std libraries (w/o rebuilding any packages), to help when debugging
+  any of the many binaries using those.  Options for NixOS to configure all
+  this.
+
 - Very minimal system state, allowing entire installation to be more easily
   reproduced.
 
