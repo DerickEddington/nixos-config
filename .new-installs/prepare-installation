@@ -208,6 +208,9 @@ done
 # Which channel to use as the needed "nixos-unstable" name.
 CHANNEL_NIXOS_UNSTABLE=https://nixos.org/channels/nixos-unstable
 
+# The Oxalica Rust Overlay as a channel for the needed "oxalica-rust-overlay" name.
+CHANNEL_OXALICA_RUST_OVERLAY=https://github.com/oxalica/rust-overlay/archive/master.tar.gz
+
 
 # Functions
 
@@ -479,6 +482,12 @@ function do-in-new-system
 
 function setup-channels
 {
+    case $1 in
+        (installer) local DO="" ;;
+        (new)       local DO=do-in-new-system ;;
+        (*) exit 2 ;;
+    esac
+
     # Add and update the nixos-unstable channel because my
     # /etc/nixos/configuration.nix uses it, and doing nixos-install needs this,
     # and the new system will need this.
@@ -488,15 +497,15 @@ function setup-channels
     # chooses which revision of the installer system to install from and chooses
     # when to update the channels in the new system.)
 
-    case $1 in
-        (installer) local DO="" ;;
-        (new)       local DO=do-in-new-system ;;
-        (*) exit 2 ;;
-    esac
-
     $DO nix-channel --add "$CHANNEL_NIXOS_UNSTABLE" nixos-unstable
     case $1 in
         (installer) $DO nix-channel --update nixos-unstable ;;
+        (new)       ;; # Unnecessary and would encounter an error.
+    esac
+
+    $DO nix-channel --add "$CHANNEL_OXALICA_RUST_OVERLAY" oxalica-rust-overlay
+    case $1 in
+        (installer) $DO nix-channel --update oxalica-rust-overlay ;;
         (new)       ;; # Unnecessary and would encounter an error.
     esac
 }
@@ -559,19 +568,19 @@ function create-nixos-config
 
 function install-nixos
 {
-    # Download the nixos-unstable channel into the installer system,
-    # to make it available to the next command.
+    # Download the nixos-unstable and oxalica-rust-overlay additional channels
+    # into the installer system, to make them available to the next command.
     setup-channels installer
 
-    # By using --channel, our nixos-unstable channel is also (together
+    # By using --channel, the additional channels are also (together
     # with the nixos channel) copied from the installer system into
     # the installee system.
     nixos-install --root /mnt --channel /nix/var/nix/profiles/per-user/root/channels \
                   --verbose --show-trace --cores 0 --max-jobs 8
 
-    # Register the nixos-unstable channel in the installee system, but
-    # do not attempt to download it into there.  The previous command
-    # already copied it, and attempting to update the channel via
+    # Register the additional channels in the installee system, but
+    # do not attempt to download them into there.  The previous command
+    # already copied them, and attempting to update the channels via
     # nixos-enter would encounter an error (due to nix build
     # sandboxing not working in a chroot, I suspected).
     setup-channels new

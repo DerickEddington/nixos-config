@@ -30,6 +30,15 @@ in
       myLib = import ../lib { pkgs = self; };
     })
 
+  # Rust pre-built toolchains from official static.rust-lang.org.
+  (self: super: let
+    oxalica = import <oxalica-rust-overlay>;  # From channel that I added.
+  in
+    assert ! (super ? rust-bin);
+    {
+      inherit (oxalica self super) rust-bin;  # (Exclude its other attributes, for now.)
+    })
+
   # Subversion client with support for storing passwords in GNOME Keyring.
   # TODO: Maybe contribute (something like) this to the official Nixpkgs package.
   (self: super: let
