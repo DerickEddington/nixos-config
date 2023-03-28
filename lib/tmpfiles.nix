@@ -3,10 +3,12 @@
 { pkgs, lib, myLib, ... }:
 
 let
-  inherit (builtins) replaceStrings stringLength substring;
+  inherit (builtins) attrNames concatStringsSep elemAt length listToAttrs
+                     replaceStrings stringLength substring;
   inherit (lib.trivial) toHexString;
-  inherit (lib.strings) concatMapStringsSep toLower;
+  inherit (lib.strings) toLower;
   inherit (lib.lists) range;
+  inherit (lib.attrsets) mapAttrsToList;
   inherit (myLib) isAbsolutePath;
   inherit (pkgs) writeTextFile;
 in
@@ -23,20 +25,31 @@ rec {
   in
     "${type} ${pathStr} ${mode} ${user} ${group} ${age}";
 
-  mkDirPkg = let
+  mkDirPkg = ruleArgs: subDirs: path:
+    mkDirPkg' { ${toString path} = ruleArgs; }
+      (listToAttrs (map (sd: { name = toString sd; value = ruleArgs; }) subDirs));
+
+  mkDirPkg' = let
     dashify = path: let r = replaceStrings ["/"] ["-"] (toString path);
                     in if isAbsolutePath path then substring 1 (stringLength r) r else r;
   in
-    (ruleArgs: subDirs: path: let
-      destPath = "/lib/tmpfiles.d/my-${dashify path}.conf";
+    (pathSpec: subDirsSpec: let
+      path = rec {
+        name = let names = attrNames pathSpec;
+               in assert (length names) == 1;
+                  elemAt names 0;
+        rule = pathSpec.${name};
+      };
+      destPath = "/lib/tmpfiles.d/my-${dashify path.name}.conf";
     in {
       pkg = writeTextFile {
-        name = "${dashify path}-tmpfiles";
+        name = "${dashify path.name}-tmpfiles";
         destination = destPath;
         text = ''
-          ${mkRule ruleArgs path}
-          ${concatMapStringsSep "\n" (e: mkRule ruleArgs (path + "/${toString e}"))
-                                     subDirs}
+          ${mkRule path.rule path.name}
+          ${concatStringsSep "\n" (mapAttrsToList
+              (sd: rule: mkRule rule "${path.name}/${sd}")
+              subDirsSpec)}
         '';
       };
       inherit destPath;

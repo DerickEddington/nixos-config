@@ -1,10 +1,10 @@
-{ config, options, pkgs, lib, ... }:
+{ config, options, pkgs, lib, myLib, ... }:
 
 let
-  inherit (builtins) elem readFile substring;
+  inherit (builtins) attrNames elem listToAttrs readFile substring;
   inherit (lib) getName mkDefault mkIf mkOption types;
   inherit (lib.lists) optionals;
-  inherit (lib.attrsets) cartesianProductOfSets;
+  inherit (lib.attrsets) cartesianProductOfSets filterAttrs;
 in
 
 let
@@ -77,6 +77,18 @@ in
     users.groups = {
       bills = {};
     };
+
+    # For each normal user, give it its own sub-directory under /var/tmp/home/.  This is
+    # especially useful for a user to place large dispensable things that it wants to be excluded
+    # from backups.
+    systemd.tmpfiles.packages = [
+      (myLib.tmpfiles.mkDirPkg'
+        { "/var/tmp/home" = { user = "root"; group = "root"; mode = "0755"; }; }
+        (listToAttrs (map (userName:
+          { name = userName; value = { user = userName; group = "users"; mode = "0700"; }; })
+          (attrNames (filterAttrs (n: v: v.isNormalUser) config.users.users))))
+      ).pkg
+    ];
 
     networking = {
       hostName = config.my.hostName;
