@@ -189,10 +189,15 @@ declare -A BOOT_DATASETS=(
 )
 
 EXTRA_DATASETS_ORDER=(
+    $INST_NAME/omit
+    $INST_NAME/omit/home
     VMs
     VMs/blkdev
 )
 declare -A EXTRA_DATASETS=(
+    # Only used for things that users want to omit from backups.
+    [$INST_NAME/omit]="     -o canmount=off -o mountpoint=/mnt/omit"
+    [$INST_NAME/omit/home]="${MAIN_DATASETS[$INST_NAME/home]}"
     # Only used for VM drive images which can either be files which get
     # compressed or zvols which do not.
     [VMs]="-o mountpoint=/mnt/VMs -o compression=zstd \

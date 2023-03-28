@@ -273,8 +273,11 @@ in
 
           (zfsPerHostMountSpecs pools.main ([
              { mountPoint = "/"; }
-             { mountPoint = "/mnt/archive"; subDataset = "/archive"; }
-             { mountPoint = "/mnt/records"; subDataset = "/records"; }
+             { mountPoint = "/mnt/archive";             subDataset = "/archive"; }
+             { mountPoint = "/mnt/records";             subDataset = "/records"; }
+             { mountPoint = "/mnt/omit/home";           subDataset = "/omit/home"; }
+             { mountPoint = "/mnt/omit/home/d";         subDataset = "/omit/home/d"; }
+             { mountPoint = "/mnt/omit/home/z";         subDataset = "/omit/home/z"; }
            ]
            ++ (map (mkMountSpec {}) [
                    "/home"

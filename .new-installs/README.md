@@ -88,8 +88,9 @@ intended for rarely setting-up a new personal system only every few years or so
    5. Adjust `TMP_DATASET_SIZE` and `VM_ZVOL_SIZE` as desired.  (Refer to how
       they are used in the source.)
    6. Optional: Add `/home/$USER` datasets to `MAIN_DATASETS` and
-      `MAIN_DATASETS_ORDER` as additional elements, for some/all of your users
-      (who will be created later).
+      `MAIN_DATASETS_ORDER`, and add `/mnt/omit/home/$USER` datasets to
+      `EXTRA_DATASETS` and `EXTRA_DATASETS_ORDER`, as additional elements, for
+      some/all of your users (who will be created later).
    7. Optional: Add extra datasets to `EXTRA_DATASETS` and
       `EXTRA_DATASETS_ORDER` as additional elements, and/or adjust the `VMs`
       ones that are already predefined there, for whatever you might want.
@@ -173,17 +174,29 @@ intended for rarely setting-up a new personal system only every few years or so
         # Disable atime for faster accesses to the Nix files
         [$INST_NAME/nix]="      -o atime=off"
         [$INST_NAME/srv]=""
-   @@ -181,10 +185,14 @@ declare -A BOOT_DATASETS=(
+   @@ -181,15 +185,26 @@ declare -A BOOT_DATASETS=(
     )
 
     EXTRA_DATASETS_ORDER=(
    +    old-misc
+        $INST_NAME/omit
+        $INST_NAME/omit/home
+   +    $INST_NAME/omit/home/me
+   +    $INST_NAME/home/work/omit
         VMs
         VMs/blkdev
     )
     declare -A EXTRA_DATASETS=(
    +    [old-misc]="-o mountpoint=/mnt/old-misc -o readonly=on -o compression=zstd \
    +                -o devices=off -o exec=off -o setuid=off"
+   +
+        # Only used for things that users want to omit from backups.
+        [$INST_NAME/omit]="     -o canmount=off -o mountpoint=/mnt/omit"
+        [$INST_NAME/omit/home]="${MAIN_DATASETS[$INST_NAME/home]}"
+   +    # Basic.
+   +    [$INST_NAME/omit/home/me]=""
+   +    # As a child of a user's dataset, to inherit quota, encryption, etc.
+   +    [$INST_NAME/home/work/omit]="-o mountpoint=/mnt/omit/home/work"
    +
         # Only used for VM drive images which can either be files which get
         # compressed or zvols which do not.
@@ -351,12 +364,15 @@ intended for rarely setting-up a new personal system only every few years or so
         };
    --- a/zfs.nix
    +++ b/zfs.nix
-   @@ -257,8 +257,6 @@ in
+   @@ -257,9 +257,9 @@ in
 
               (zfsPerHostMountSpecs pools.main ([
                  { mountPoint = "/"; }
-   -             { mountPoint = "/mnt/archive"; subDataset = "/archive"; }
-   -             { mountPoint = "/mnt/records"; subDataset = "/records"; }
+   -             { mountPoint = "/mnt/archive";             subDataset = "/archive"; }
+   -             { mountPoint = "/mnt/records";             subDataset = "/records"; }
+                 { mountPoint = "/mnt/omit/home";           subDataset = "/omit/home"; }
+   +             { mountPoint = "/mnt/omit/home/me";        subDataset = "/omit/home/me"; }
+   +             { mountPoint = "/mnt/omit/home/work";      subDataset = "/home/work/omit"; }
                ]
                ++ (map (mountPoint: { inherit mountPoint; subDataset = mountPoint; }) [
                        "/home"

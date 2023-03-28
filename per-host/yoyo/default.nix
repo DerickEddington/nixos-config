@@ -112,6 +112,7 @@ in
     noAuto = [
       "/home/v"
       "/home/v/old"
+      { mountPoint = "/mnt/omit/home/v"; subDataset = "/home/v/omit"; }
     ];
   };
 

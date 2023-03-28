@@ -78,17 +78,22 @@ in
       bills = {};
     };
 
-    # For each normal user, give it its own sub-directory under /var/tmp/home/.  This is
-    # especially useful for a user to place large dispensable things that it wants to be excluded
-    # from backups.
-    systemd.tmpfiles.packages = [
-      (myLib.tmpfiles.mkDirPkg'
-        { "/var/tmp/home" = { user = "root"; group = "root"; mode = "0755"; }; }
-        (listToAttrs (map (userName:
-          { name = userName; value = { user = userName; group = "users"; mode = "0700"; }; })
-          (attrNames (filterAttrs (n: v: v.isNormalUser) config.users.users))))
-      ).pkg
-    ];
+    # For each normal user, give it its own sub-directories under /mnt/omit/home/ and
+    # /var/tmp/home/.  This is especially useful for a user to place large dispensable things that
+    # it wants to be excluded from backups.
+    systemd.tmpfiles.packages = let
+      mkTmpfilesDirPkg = base:
+        (myLib.tmpfiles.mkDirPkg'
+          { ${base} = { user = "root"; group = "root"; mode = "0755"; }; }
+          (listToAttrs (map (userName:
+            { name = userName; value = { user = userName; group = "users"; mode = "0700"; }; })
+            (attrNames (filterAttrs (n: v: v.isNormalUser) config.users.users))))
+        ).pkg;
+    in
+      map mkTmpfilesDirPkg [
+        "/mnt/omit/home"
+        "/var/tmp/home"
+      ];
 
     networking = {
       hostName = config.my.hostName;
