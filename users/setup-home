@@ -56,7 +56,7 @@ shopt -u nullglob dotglob
 
 # Basic sanity check.  Non-exhaustive since the checkout of the DOTFILES_ORIGIN
 # will try to create other files that also should not exist yet.
-assert-all-nonexistent .dotfiles .git .git-hidden .config/nixpkgs/home.nix
+assert-all-nonexistent .dotfiles .git .git-hidden .config/home-manager/home.nix
 
 chmod -v og-rwx .
 
@@ -94,7 +94,7 @@ chmod -v og-rwx .
 }
 
 # Install home-manager per user and activate.  The dot-files installed above
-# provide a premade .config/nixpkgs/home.nix file.
+# provide a premade .config/home-manager/home.nix file.
 {
     [[ "$(nixos-version)" =~ ^([[:digit:]]+\.[[:digit:]]+) ]]  # errexit on fail
     NIXOS_RELEASE="${BASH_REMATCH[1]}"

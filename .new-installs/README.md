@@ -603,11 +603,11 @@ intended for rarely setting-up a new personal system only every few years or so
     ```
 ---
 
-12. Adjust Home Manager configuration in `users/dotfiles/.config/nixpkgs/home/`
+12. Adjust Home Manager configuration in `users/dotfiles/.config/home-manager/`
     to be used by all your users (per-user adjustments will be done later):
 
     ```shell
-    pushd /etc/nixos/users/dotfiles/.config/nixpkgs/home
+    pushd /etc/nixos/users/dotfiles/.config/home-manager
     ```
 
     1. Rename to your new host name:
@@ -623,7 +623,7 @@ intended for rarely setting-up a new personal system only every few years or so
        1. Change `dpi` to the DPI of your monitor/screen/display.
 
     3. Optional: Change various aspects in the files under
-       `.config/nixpkgs/home/` that are my choices which you might want to be
+       `.config/home-manager/` that are my choices which you might want to be
        different.  See the comments in the files.  (Note that you can also make
        further changes later, thanks to Home Manager.)
 
@@ -753,7 +753,7 @@ intended for rarely setting-up a new personal system only every few years or so
       GIT_DIR=.dotfiles git status
       ```
 
-    If changes are made to any of the files under `~/.config/nixpkgs/home/`,
+    If changes are made to any of the files under `~/.config/home-manager/`,
     which are the [Home Manager](https://github.com/nix-community/home-manager)
     configuration (that auto-generates and manages some of a user's
     home-directory files) (already installed by step 15.1), then the
@@ -768,8 +768,8 @@ intended for rarely setting-up a new personal system only every few years or so
 
     For example, I might make changes for the `work` user like:
     ```diff
-    --- a/.config/nixpkgs/home/default.nix
-    +++ b/.config/nixpkgs/home/default.nix
+    --- a/.config/home-manager/home.nix
+    +++ b/.config/home-manager/home.nix
     @@ -23,8 +23,15 @@ in
 
        # Packages available in per-user profile.

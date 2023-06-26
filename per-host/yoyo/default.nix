@@ -178,8 +178,6 @@ in
 
   hardware.cpu.amd.updateMicrocode = true;
 
-  # hardware.video.hidpi.enable = true;  # TODO? Maybe try with 21.11. Was broken with 21.05
-
   # Enable sound.
   sound.enable = true;
   hardware.pulseaudio.enable = true;
@@ -197,8 +195,8 @@ in
 
     xrandrHeads = [
       {
-        # (The kernel names this same monitor HDMI-A-1 for some reason.)
-        output = "HDMI-A-0";
+        # (The kernel names this same monitor HDMI-A-1.)
+        output = "HDMI-1";
         primary = true;
         # This DisplaySize corresponds to my current external monitor which is a Philips 346B.
         # This value corresponds to what the device itself reports.
@@ -219,7 +217,7 @@ in
         '');
       }
     ] ++ (optional (!(elem "video=eDP-1:d" config.boot.kernelParams)) {
-      output = "eDP";
+      output = "eDP-1";
     });
 
     # This DPI corresponds to my current external monitor which is a Philips 346B.  Unset because

@@ -36,8 +36,10 @@ in
     ];
 
     boot = {
-      cleanTmpDir = true;
-      # tmpOnTmpfs = true;
+      tmp = {
+        cleanOnBoot = true;
+        # useTmpfs = true;
+      };
     };
 
     i18n.defaultLocale = "en_US.UTF-8";
@@ -214,7 +216,7 @@ in
     };
 
     # Make Qt theme like GTK.
-    qt5 = let
+    qt = let
       # This predicate exists so that it could be extended with others.
       isGtkBasedDesktopManager = config.services.xserver.desktopManager.mate.enable;
     in {
@@ -233,6 +235,14 @@ in
 
         # Allow and show only select "unfree" packages.
         allowUnfreePredicate = pkg: elem (getName pkg) config.my.allowedUnfree;
+
+        # TODO: Eventually remove this.
+        # One or more of my chosen installed packages needs these currently.
+        permittedInsecurePackages = [
+          "openssl-1.1.1u"
+          "nodejs-14.21.3"
+          "electron-13.6.9"
+        ];
       };
 
       overlays = import ./nixpkgs/overlays.nix (_self: _super: {
