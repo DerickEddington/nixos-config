@@ -239,7 +239,7 @@ in
         # TODO: Eventually remove this.
         # One or more of my chosen installed packages needs these currently.
         permittedInsecurePackages = [
-          "openssl-1.1.1u"
+          "openssl-1.1.1v"
           "nodejs-14.21.3"
           "electron-13.6.9"
         ];
