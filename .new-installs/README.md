@@ -610,6 +610,12 @@ intended for rarely setting-up a new personal system only every few years or so
     pushd /etc/nixos/users/dotfiles/.config/home-manager
     ```
 
+    0. Adjust `home.nix`:
+       ```shell
+       sudo $EDITOR home.nix
+       ```
+       1. Change `home.stateVersion` to the NixOS release that you are installing.
+
     1. Rename to your new host name:
        ```shell
        sudo git mv per-host/{yoyo,$HOSTNAME}
