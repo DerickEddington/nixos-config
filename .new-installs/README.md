@@ -739,7 +739,7 @@ intended for rarely setting-up a new personal system only every few years or so
     named `~/.git` to prevent users' homes from being seen as repositories most
     of the time.  You must temporarily make `git` use `~/.dotfiles` when needed:
 
-    - My `with-unhidden-gitdir` command is provided by my `nixos-config`
+    - My `with-unhidden-gitdir` command is provided by my `dotfiles`
       repository for this purpose and was installed during the above steps
       (unless you removed it from `environment.systemPackages` in
       `/etc/nixos/configuration.nix`).  It simply temporarily creates a `.git`

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -o errexit -o nounset -o xtrace
 
+# TODO: Maybe modify to use the new `my-deploy-setup dir:$HOME` or `start0.sh` or `start1.bash`?
+
 # This script sets-up the home directory of a newly-created user.  It is
 # intended to be run, by the new user, only once when the new home directory is
 # empty.  Normally, it is run with the current working directory being the new

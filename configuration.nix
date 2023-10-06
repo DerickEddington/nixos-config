@@ -251,7 +251,6 @@ in
     };
 
     environment = let
-      with-unhidden-gitdir = import ./users/with-unhidden-gitdir.nix { inherit pkgs; };
       myFirefox = import ./firefox.nix { inherit pkgs; };
       # Reduced set of the Comix Cursors variants (don't want all of them).
       comixcursorsChosen =
@@ -264,7 +263,6 @@ in
       systemPackages =
       # Those arranged above
       [
-        with-unhidden-gitdir
         myFirefox
       ]
       ++ (optionals config.services.xserver.enable
