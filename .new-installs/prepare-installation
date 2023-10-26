@@ -376,6 +376,10 @@ function disable-zpool-cache
 
 function setup-state-dir
 {
+    # Create this before first boot, because my /etc/nixos/configuration.nix
+    # needs to use it immediately.
+    systemd-machine-id-setup --root=/mnt --print
+
     # The ZFS-on-root guide says this would be for "immutable root filesystem"
     # for "erasing all your darlings", but I'm not doing that.
 
@@ -385,10 +389,6 @@ function setup-state-dir
         mkdir -p /mnt/state/$X /mnt/$X
         mount -o bind /mnt/state/$X /mnt/$X
     done
-
-    # My /etc/nixos/configuration.nix handles linking to this
-    # /state/etc/machine-id.
-    systemd-machine-id-setup --root=/mnt/state --print
 }
 
 function setup-etc-nixos-git-repo

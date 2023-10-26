@@ -208,7 +208,6 @@ in
     };
 
     environment.etc = {
-      "machine-id".source = "/state/etc/machine-id";
       "zfs/zpool.cache".source = "/state/etc/zfs/zpool.cache";
     };
 

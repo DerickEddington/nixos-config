@@ -103,7 +103,7 @@ in
       # Derive from our machine-id.  Use relative path so that this reads the
       # correct file when doing installs where the new system is located
       # somewhere other than / (e.g. /mnt/).
-      hostId = substring 0 8 (readFile ../../state/etc/machine-id);
+      hostId = substring 0 8 (readFile ../../etc/machine-id);
 
       firewall.allowPing = mkDefault false;
 
