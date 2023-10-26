@@ -378,7 +378,7 @@ in
       # By default, do not auto-start it for all users.
       # A user can auto-start it via their Home Manager configuration by:
       # `my.rootlessDocker.autoStart = true`
-      # (see ./users/dotfiles/.config/nixpkgs/home/common/rootless-docker.nix)
+      # (see ./users/dotfiles/.config/home-manager/common/rootless-docker.nix)
       wantedBy = lib.mkForce [];
     };
 

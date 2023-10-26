@@ -1,6 +1,6 @@
 # My design for configuring the provision of debugging support for various kinds of Nix packages.
 # This file is also `import`ed by users' configurations (by their copies of
-# ./users/dotfiles/.config/nixpkgs/home/common/debugging.nix), and so changes to this file might
+# ./users/dotfiles/.config/home-manager/common/debugging.nix), and so changes to this file might
 # impact their use and so must be coordinated across that.
 
 { config, pkgs, lib, myLib, ...}:
