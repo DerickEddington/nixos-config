@@ -174,7 +174,7 @@ declare -A MAIN_DATASETS=(
     [$INST_NAME/var]="      -o canmount=off"
     [$INST_NAME/var/cache]=""
     [$INST_NAME/var/games]=""
-    [$INST_NAME/var/lib]=""
+    [$INST_NAME/var/lib]="-o acltype=posix"
     [$INST_NAME/var/local]=""
     # journald requires ACLs
     [$INST_NAME/var/log]="  -o compression=zstd -o acltype=posix"
