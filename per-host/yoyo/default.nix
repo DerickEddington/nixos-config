@@ -103,9 +103,9 @@ in
   users.users = let
     common = config.my.users.commonAttrs;
   in {
-    v = common // {
-      extraGroups = [ "audio" ];
-    };
+    # v = common // {  # No longer using. It's all backed-up.
+    #   extraGroups = [ "audio" ];
+    # };
   };
 
   my.zfs.encryptedHomes = {
