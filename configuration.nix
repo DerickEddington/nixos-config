@@ -121,9 +121,6 @@ in
     };
 
     security.pki.caCertificateBlacklist = [
-      "TrustCor ECA-1"
-      "TrustCor RootCert CA-1"
-      "TrustCor RootCert CA-2"
     ];
 
     services = {
@@ -209,8 +206,8 @@ in
     };
 
     fonts = {
-      enableDefaultFonts = true;
-      fonts = with pkgs; [
+      enableDefaultPackages = true;
+      packages = with pkgs; [
         ubuntu_font_family
       ];
     };
@@ -235,14 +232,6 @@ in
 
         # Allow and show only select "unfree" packages.
         allowUnfreePredicate = pkg: elem (getName pkg) config.my.allowedUnfree;
-
-        # TODO: Eventually remove this.
-        # One or more of my chosen installed packages needs these currently.
-        permittedInsecurePackages = [
-          "openssl-1.1.1w"
-          "nodejs-14.21.3"
-          "electron-13.6.9"
-        ];
       };
 
       overlays = import ./nixpkgs/overlays.nix (_self: _super: {

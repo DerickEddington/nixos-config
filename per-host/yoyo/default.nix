@@ -12,16 +12,6 @@ in
 {
   imports = [
     ./hardware-configuration.nix
-
-    # TODO: Until tuxedo-control-center is in pkgs, must fetch directly from the
-    #       contributor.  Once it is in pkgs, this variable and its uses should
-    #       be deleted, and the hardware.tuxedo-control-center.enable option
-    #       (defined below) will already be declared.
-    (let
-       ext-tcc = assert ! (let nixpkgs = import <nixpkgs> {}; in nixpkgs ? tuxedo-control-center);
-                 import (fetchTarball https://github.com/blitz/tuxedo-nixos/archive/master.tar.gz);
-     in
-       ext-tcc.module)
   ]
   ++ (optional (pathExists ./private.nix) ./private.nix);
 
@@ -188,7 +178,6 @@ in
 
   # Drivers from Tuxedo Computers that also work on my Clevo NH55EJQ.
   hardware.tuxedo-keyboard.enable = true;  # Also enabled by the next below.
-  hardware.tuxedo-control-center.enable = true;
 
   services.xserver = {
     exportConfiguration = true;
