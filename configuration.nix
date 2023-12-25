@@ -16,7 +16,7 @@ in
     ./module-args.nix
     (./per-host + "/${hostName}")
     ./debugging.nix
-    ./zfs.nix
+    ./zfs
     ./networking
   ];
 

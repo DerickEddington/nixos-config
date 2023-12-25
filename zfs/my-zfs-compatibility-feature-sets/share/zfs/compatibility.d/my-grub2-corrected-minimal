@@ -1,0 +1,8 @@
+# Features which are certainly supported by GRUB2 (excluding incorrectly-assumed ones).
+async_destroy
+embedded_data
+empty_bpobj
+enabled_txg
+hole_birth
+lz4_compress
+spacemap_histogram

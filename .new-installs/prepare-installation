@@ -8,7 +8,11 @@ set -o monitor -o errexit -o nounset -o xtrace
 #
 # This is intended to be run from a booted NixOS minimal ISO image, as root.
 
-SELF="$0"
+SELF_FILE=$(realpath --no-symlinks "${BASH_SOURCE[0]}")
+SELF_DIR=$(dirname "$SELF_FILE")
+# This script is assumed to be located in .new-installs/ in the correct
+# repository.
+SELF_REPO=$(dirname "$SELF_DIR")
 
 [[ $UID -eq 0 && $EUID -eq 0 && $USER == root ]]
 
@@ -293,9 +297,17 @@ function partition-drives
 
 function create-boot-pool
 {
+    # Install the file(s) for my custom "compatibility feature sets" for ZFS,
+    # into the installer system, as needed for the next `zpool create` command
+    # that references them.  (This is installed into the installee system
+    # differently and automatically by my /etc/nixos/configuration.nix.)
+    mkdir -p /etc/zfs/compatibility.d
+    ln -s -t /etc/zfs/compatibility.d/ \
+       "$SELF_REPO"/zfs/my-zfs-compatibility-feature-sets/share/zfs/compatibility.d/*
+
     # Only features supported by GRUB2
     zpool create -f \
-          -o compatibility=grub2 \
+          -o compatibility=my-grub2-corrected-minimal \
           ${POOL_PROPS_COMMON[@]} \
           -O canmount=off \
           -O mountpoint=none \
@@ -393,12 +405,9 @@ function setup-state-dir
 
 function setup-etc-nixos-git-repo
 {
-    # This script is assumed to be located in .new-installs/ in the correct
-    # repository.
-    local GIT_REPO="$(dirname "$(dirname "$SELF")")"
     local PERHOST=/mnt/etc/nixos/per-host/$INST_NAME
 
-    cp -d -R -T "$GIT_REPO" /mnt/etc/nixos
+    cp -d -R -T "$SELF_REPO" /mnt/etc/nixos
 
     mkdir -p $PERHOST
     nixos-generate-config --no-filesystems --dir $PERHOST

@@ -325,5 +325,13 @@ in
             ''RESULT=="${pools.main.name}/VMs/blkdev/${id}" '' +
             ''OWNER="${owner}"'')
         usersZvolsForVMs);
+
+    # Needed for the way I configure my boot zpool that has its `compatibility` property set to
+    # `my-grub2-corrected-minimal` which is a filename and that file is provided by this where ZFS
+    # operations (e.g. `zpool upgrade` or `zpool create`) can find it.  (This simply copies the
+    # contents of this given sub-directory into the `/nix/store/` and adds that into the system
+    # paths so these file(s) are located under `/run/current-system/sw/share/zfs/compatibility.d/`
+    # where the ZFS utilities (as patched by NixOS) look for them.)
+    environment.systemPackages = [ "${./my-zfs-compatibility-feature-sets}" ];
   };
 }

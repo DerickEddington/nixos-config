@@ -299,9 +299,9 @@ intended for rarely setting-up a new personal system only every few years or so
          especially [Part
          II. Configuration](https://nixos.org/manual/nixos/stable/index.html#ch-configuration).)
 
-   2. Adjust `zfs.nix`:
+   2. Adjust `zfs/default.nix`:
       ```shell
-      sudo $EDITOR zfs.nix
+      sudo $EDITOR zfs/default.nix
       ```
       1. Change `fileSystems` elements to match your choices in steps 3.6 and
          3.7 (if any).
@@ -362,8 +362,8 @@ intended for rarely setting-up a new personal system only every few years or so
           banking = common;
           bills = common;
         };
-   --- a/zfs.nix
-   +++ b/zfs.nix
+   --- a/zfs/default.nix
+   +++ b/zfs/default.nix
    @@ -257,9 +257,9 @@ in
 
               (zfsPerHostMountSpecs pools.main ([
