@@ -176,8 +176,22 @@ in
   hardware.bluetooth.enable = true;
   services.blueman.enable = true;
 
-  # Drivers from Tuxedo Computers that also work on my Clevo NH55EJQ.
+  # Controls for Tuxedo Computers hardware that also work on my Clevo NH55EJQ.
   hardware.tuxedo-keyboard.enable = true;  # Also enabled by the next below.
+  # I use this for dynamic fan-speed adjusting based on CPU temperature.
+  hardware.tuxedo-rs.enable = true;
+  hardware.tuxedo-rs.tailor-gui.enable = true;
+
+  # Have dynamic CPU-frequency reduction based on load, to keep temperature and fan noise down
+  # when there's light load, but still allow fairly high frequencies (limited by the separate
+  # choice of fan-speed-management-profile's curve's efficacy at removing heat) when there's heavy
+  # load.  Other choices for this are: "schedutil" or "conservative".  I choose "ondemand" in
+  # preference to "schedutil", simply because that's what the Tuxedo Control Center does (or at
+  # least did when I previously used it), but otherwise I don't know if another might be slightly
+  # better for my actual usage patterns.  Note: maximum performance is attained with the fans'
+  # speeds at the highest, which I have a different profile for in Tuxedo-rs's Tailor that I
+  # switch between as desired.
+  powerManagement.cpuFreqGovernor = "ondemand";
 
   services.xserver = {
     exportConfiguration = true;
