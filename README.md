@@ -41,8 +41,8 @@ As used for my personal laptop.
 
 ## NixOS Version
 
-These repositories were created using NixOS 21.05 and were very-minorly adjusted
-for 21.11, 22.05, 22.11, and then 23.05 which they now target.
+These repositories were created using NixOS 21.05 and were minorly adjusted
+for 21.11, 22.05, 22.11, 23.05, and then 23.11 which they now target.
 
 ## Installation
 
