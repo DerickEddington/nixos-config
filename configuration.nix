@@ -344,11 +344,12 @@ in
         # to abort and crash, which breaks its use with Docker.
       # storage-driver = "fuse-overlayfs";
 
-        # Doesn't work on top of ZFS (at least, not until OpenZFS supports it),
-        # but can make a zvol (e.g. as a sub dataset of an encrypted home
+        # This works on top of ZFS only for OpenZFS versions 2.2+.
+        # (For older versions, the workaround is to:
+        # make a zvol (e.g. as a sub dataset of an encrypted home
         # dataset, so it's also encrypted) and make an ext4 FS on that zvol,
         # since overlay2 is supported on top of ext4, and mount that on
-        # ~/.local/share/docker/.
+        # ~/.local/share/docker/).
         storage-driver = "overlay2";
 
         dns = let
