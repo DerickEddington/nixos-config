@@ -184,7 +184,7 @@ in
     # started in user sessions, and so should be done here and not in
     # environment.systemPackages.
     programs = {
-      nm-applet.enable = true;
+      nm-applet.enable = config.networking.networkmanager.enable;
 
       ssh = {
         # Have `ssh-agent` be already available for users which want to use it.  No harm in
