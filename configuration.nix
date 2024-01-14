@@ -1,4 +1,4 @@
-{ config, options, pkgs, lib, myLib, ... }:
+{ config, options, pkgs, lib, myLib, is, ... }:
 
 let
   inherit (builtins) attrNames elem listToAttrs readFile substring;
@@ -32,6 +32,12 @@ in
   };
 
   config = {
+    assertions = [ {
+      # Checks the logic of my own predicates, even if NixOS already ensures this.
+      assertion = is.desktop -> is.GUI;
+      message = "Desktop environment requires GUI display.";
+    } ];
+
     my.hostName = hostName;
     my.allowedUnfree = [
       "Oracle_VM_VirtualBox_Extension_Pack"
@@ -177,14 +183,16 @@ in
       };
 
       # Enable CUPS to print documents.
-      printing.enable = true;
+      printing.enable = mkDefault is.GUI;  # Note: Could be changed elsewhere, if desired.
     };
 
     # Some programs need SUID wrappers, can be configured further, or are
     # started in user sessions, and so should be done here and not in
     # environment.systemPackages.
     programs = {
-      nm-applet.enable = config.networking.networkmanager.enable;
+      # NetworkManager Applet, enabled only for MATE Desktop, because I believe that other DEs
+      # provide their own thing for such functionality.
+      nm-applet.enable = is.MATE && is.GUI && config.networking.networkmanager.enable;
 
       ssh = {
         # Have `ssh-agent` be already available for users which want to use it.  No harm in
@@ -194,7 +202,7 @@ in
         # This is better than the other choices, because: it "grabs" the desktop (unlike GNOME's
         # Seahorse's which has some error when it tries to do that); and it doesn't depend on
         # other things (unlike KDE's ksshaskpass which depends on KWallet).
-        askPassword = "${pkgs.ssh-askpass-fullscreen}/bin/ssh-askpass-fullscreen";
+        askPassword = mkIf is.GUI "${pkgs.ssh-askpass-fullscreen}/bin/ssh-askpass-fullscreen";
       };
 
       git = {
@@ -208,7 +216,7 @@ in
       # Install Wireshark with a group and setcap-wrapper setup for it.
       wireshark = {
         enable = true;
-        package = if config.services.xserver.enable then pkgs.wireshark else pkgs.wireshark-cli;
+        package = if is.GUI then pkgs.wireshark else pkgs.wireshark-cli;
       };
 
       gnupg.agent = {
@@ -219,21 +227,24 @@ in
       };
     };
 
-    fonts = {
+    fonts = mkIf is.GUI {
       enableDefaultPackages = true;
       packages = with pkgs; [
         ubuntu_font_family
       ];
     };
 
-    # Make Qt theme like GTK.
-    qt = let
-      # This predicate exists so that it could be extended with others.
-      isGtkBasedDesktopManager = config.services.xserver.desktopManager.mate.enable;
-    in {
-      enable = isGtkBasedDesktopManager;
-      platformTheme = "gtk2";
-      style = "gtk2";
+    # Make Qt theme like my chosen desktop environment.
+    qt = mkIf is.GUI {
+      enable = is.GTK;
+      platformTheme = if is.MATE then "gtk2"
+                      else if is.GNOME then "gnome"
+                      else if is.KDE then "kde"
+                      else null;
+      style = if is.MATE then "gtk2"
+              else if is.GNOME then "adwaita"
+              else if is.KDE then "breeze"
+              else null;
     };
 
     nixpkgs = {
@@ -266,9 +277,10 @@ in
       # Those arranged above
       [
       ]
-      ++ (optionals config.services.xserver.enable
-        comixcursorsChosen
-      )
+      ++ (optionals is.GUI ([
+      ]
+      ++ comixcursorsChosen
+      ))
       # Those directly from `pkgs`
       ++ (with pkgs; [
         lsb-release
@@ -295,9 +307,8 @@ in
         xorg.lndir  # (Independent of Xorg being installed (I think).)
         hello  # Can be useful to test debugging.
       ]
-      # If GUI desktop is enabled
-      ++ (if config.services.xserver.enable then (
-      (optionals config.services.xserver.desktopManager.mate.enable [
+      ++ (if is.GUI then (
+      (optionals is.MATE [
         libreoffice
         rhythmbox
         transmission-gtk
@@ -331,8 +342,9 @@ in
 
     virtualisation.virtualbox = {
       host = {
-        enable = true;
-        enableExtensionPack = true;
+        enable = mkDefault is.GUI;  # Note: Could be enabled when non-GUI, if desired.
+        enableExtensionPack = mkDefault is.GUI;  # Note: Could be changed. Causes long rebuilds.
+        headless = ! is.GUI;
       };
     };
 

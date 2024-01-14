@@ -3,7 +3,7 @@
 # entries integrate with its other features.  Also, configure some more things to use the Secret
 # Service API.
 
-{ config, pkgs, lib, ...}:
+{ config, pkgs, lib, is, ...}:
 
 let
   inherit (lib) mkEnableOption mkIf mkForce;
@@ -16,20 +16,16 @@ in
 
   config = let
     cfg = config.my.secret-service;
-    inherit (config.services) xserver;
-    isGUI = xserver.enable;
-    isMATE = xserver.desktopManager.mate.enable;
-    isKDE = xserver.desktopManager.plasma5.enable;
   in
     mkIf cfg.enable {
       assertions = [ {
-        assertion = isMATE;
+        assertion = is.MATE;
         message = "Only designed for use with MATE Desktop.";
       } {
-        assertion = ! isKDE;
+        assertion = ! is.KDE;
         message = "Don't know how to disable KDE's provider of the Secret Service.";
       } {
-        assertion = isGUI;
+        assertion = is.GUI;
         message = "Don't know how to only install `keepassxc-cli` without GUI dependencies.";
       }];
 
@@ -42,7 +38,7 @@ in
                       pkgs.libsecret.out;  # As var, in case it's elsewhere in the future.
       in with pkgs; [
         # Install KeePassXC system-wide for all users.
-        (if isGUI then
+        (if is.GUI then
            keepassxc
          else
            keepassxc-cli  # Invalid: Too bad there's not this w/o needing GUI desktop.
@@ -56,7 +52,7 @@ in
         # A GUI to the general Secret Service API (and to SSH & GPG keys).  Not necessary for
         # things to use the API, but is a useful GUI for seeing what entries are offered by the
         # provider of it and for doing light management tasks of entries.
-        seahorse.enable = isGUI;
+        seahorse.enable = is.GUI;
 
         git = {
           package = pkgs.gitFull;  # Mostly to have `git-credential-libsecret`.

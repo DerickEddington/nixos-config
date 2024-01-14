@@ -1,6 +1,6 @@
 # Options specific to this particular host machine.
 
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, is, ... }:
 
 let
   inherit (builtins) elem pathExists;
@@ -180,7 +180,7 @@ in
   hardware.tuxedo-keyboard.enable = true;  # Also enabled by the next below.
   # I use this for dynamic fan-speed adjusting based on CPU temperature.
   hardware.tuxedo-rs.enable = true;
-  hardware.tuxedo-rs.tailor-gui.enable = true;
+  hardware.tuxedo-rs.tailor-gui.enable = is.GUI;
 
   # Have dynamic CPU-frequency reduction based on load, to keep temperature and fan noise down
   # when there's light load, but still allow high frequencies (limited by the separate choice of
