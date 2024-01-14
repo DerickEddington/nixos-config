@@ -266,8 +266,11 @@ in
     ];
   };
 
-  nix.settings = {
-    extra-experimental-features = "nix-command";
+  nix = {
+    daemonCPUSchedPolicy = "idle"; daemonIOSchedClass = "idle";  # So builds defer to my tasks.
+    settings = {
+      extra-experimental-features = "nix-command";
+    };
   };
 
   # Enable Docker, run by non-root users.
