@@ -1,9 +1,10 @@
-{ pkgs }:
+self: super:
 
 let
-  inherit (pkgs) wrapFirefox firefox-unwrapped /*fetchFirefoxAddon*/;
+  inherit (super) firefox;
+  inherit (self) keepassxc /*fetchFirefoxAddon*/;
 in
-  wrapFirefox firefox-unwrapped {
+  firefox.override {
 
     # See https://github.com/mozilla/policy-templates or
     # about:policies#documentation for more possibilities.
@@ -44,4 +45,8 @@ in
     #   #   sha256 = "";
     #   # })
     # ];
+
+    nativeMessagingHosts = [
+      keepassxc  # Allow the KeePassXC-Browser extension to communicate, when a user installed it.
+    ];
   }

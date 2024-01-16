@@ -18,6 +18,7 @@ in
     ./debugging.nix
     ./zfs
     ./networking
+    ./secret-service.nix
   ];
 
   options.my = {
@@ -34,6 +35,7 @@ in
     my.allowedUnfree = [
       "Oracle_VM_VirtualBox_Extension_Pack"
     ];
+    my.secret-service.enable = true;  # Custom way of providing and using the Secret Service API.
 
     boot = {
       tmp = {
@@ -183,12 +185,22 @@ in
     programs = {
       nm-applet.enable = true;
 
-      ssh.askPassword = "${pkgs.ssh-askpass-fullscreen}/bin/ssh-askpass-fullscreen";
+      ssh = {
+        # Have `ssh-agent` be already available for users which want to use it.  No harm in
+        # starting it for users which don't use it (as long as their apps & tools are not
+        # configured to accidentally use it unintentionally, but that's their choice).
+        startAgent = true;
+        # This is better than the other choices, because: it "grabs" the desktop (unlike GNOME's
+        # Seahorse's which has some error when it tries to do that); and it doesn't depend on
+        # other things (unlike KDE's ksshaskpass which depends on KWallet).
+        askPassword = "${pkgs.ssh-askpass-fullscreen}/bin/ssh-askpass-fullscreen";
+      };
 
       git = {
         enable = true;
         config = {
           safe.directory = ["/etc/nixos" "/etc/nixos/users/dotfiles"];
+          transfer.credentialsInUrl = "die";
         };
       };
 
@@ -198,11 +210,12 @@ in
         package = if config.services.xserver.enable then pkgs.wireshark else pkgs.wireshark-cli;
       };
 
-      # TODO
-      # gnupg.agent = {
-      #   enable = true;
-      #   enableSSHSupport = true;
-      # };
+      gnupg.agent = {
+        enable = true;
+        enableExtraSocket = true;    # Why not? Upstream's default is this. Helps forwarding.
+        enableBrowserSocket = true;  # Why not?
+       #enableSSHSupport = true;  # Would only be for using GPG keys as SSH keys.
+      };
     };
 
     fonts = {
@@ -240,7 +253,6 @@ in
     };
 
     environment = let
-      myFirefox = import ./firefox.nix { inherit pkgs; };
       # Reduced set of the Comix Cursors variants (don't want all of them).
       comixcursorsChosen =
         map ({color, hand}: pkgs.comixcursors."${hand}Opaque_${color}")
@@ -252,7 +264,6 @@ in
       systemPackages =
       # Those arranged above
       [
-        myFirefox
       ]
       ++ (optionals config.services.xserver.enable
         comixcursorsChosen
@@ -316,6 +327,9 @@ in
         # a workaround hack, relying on unspecified Git behavior, and hopefully
         # this is only temporary until a proper resolution.
         GIT_ASKPASS = "";
+        # Where KeePassXC defaults to for its initial-location picking for new databases.
+        KPXC_INITIAL_DIR = mkIf (elem pkgs.keepassxc config.environment.systemPackages)
+                             "\${XDG_DATA_HOME:-$HOME/.local/share}/my";
       };
     };
 

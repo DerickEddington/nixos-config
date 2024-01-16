@@ -30,6 +30,10 @@ in
       myLib = import ../lib { pkgs = self; };
     })
 
+  # Firefox with my extra configuration.  My users usually install this via Home Manager.
+  (self: super:
+    { firefox = import ../firefox.nix self super; })
+
   # Tuxedo-rs newer version than in stable channel.  Don't use unstable channel, so this is built
   # with stable's Rust env and stdEnv, and so the version only changes when I want.
   (let ver = "0.2.4";  # TODO: Periodically check if a newer version is released in the future.
@@ -66,10 +70,10 @@ in
       inherit (oxalica self super) rust-bin;  # (Exclude its other attributes, for now.)
     })
 
-  # Subversion client with support for storing passwords in GNOME Keyring.
+  # Subversion client with support for storing passwords in the D-Bus Secret Service API.
   # TODO: Maybe contribute (something like) this to the official Nixpkgs package.
   (self: super: let
-    flag = "--with-gnome-keyring";
+    flag = "--with-gnome-keyring";  # Actually is "with libsecret support".
   in {
     subversionClient = super.subversionClient.overrideAttrs (previousAttrs:
       assert ! (elem flag previousAttrs.configureFlags);
