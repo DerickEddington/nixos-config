@@ -20,6 +20,7 @@ in
     ./networking
     ./secret-service.nix
     ./rootless-docker.nix
+    ./spell-checking.nix
   ];
 
   options.my = {
@@ -298,7 +299,6 @@ in
         unstable.fd
         file
         screen
-        aspell aspellDicts.en aspellDicts.en-computers aspellDicts.en-science
         cifs-utils
         sshfs
         bind.dnsutils
