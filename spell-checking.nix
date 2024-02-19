@@ -7,6 +7,7 @@
       aspellDicts.en
       aspellDicts.en-computers
       aspellDicts.en-science
+      hunspellDicts.en_US-large  # Mainly for LibreOffice.
     ];
 
     # Needed because NixOS no longer automatically exports ASPELL_CONF, and its new patching of
