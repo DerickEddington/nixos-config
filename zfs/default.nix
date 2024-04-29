@@ -109,6 +109,10 @@ in
   config = let
     inherit (config.my) hostName;
     inherit (config.my.zfs) mirrorDrives firstDrive partitions pools encryptedHomes usersZvolsForVMs;
+
+    # Copy the contents of this given sub-directory into the `/nix/store/`, and evaluate to a
+    # string that is the pathname of where that was copied to.
+    myCompatibilityFeatureSets = "${./my-zfs-compatibility-feature-sets}";
   in {
     # To avoid infinite recursion, must check these aspects here.
     assertions =
@@ -209,6 +213,10 @@ in
 
     environment.etc = {
       "zfs/zpool.cache".source = "/state/etc/zfs/zpool.cache";
+      # Needed for the way I configure my boot zpool that has its `compatibility` property set to
+      # `my-grub2-corrected-minimal` which is a filename and that file is provided by this where
+      # ZFS operations (e.g. `zpool status`, `zpool upgrade`, etc.) can find it.
+      "zfs/compatibility.d".source = "${myCompatibilityFeatureSets}/share/zfs/compatibility.d";
     };
 
     services.zfs = {
@@ -326,12 +334,10 @@ in
             ''OWNER="${owner}"'')
         usersZvolsForVMs);
 
-    # Needed for the way I configure my boot zpool that has its `compatibility` property set to
-    # `my-grub2-corrected-minimal` which is a filename and that file is provided by this where ZFS
-    # operations (e.g. `zpool upgrade` or `zpool create`) can find it.  (This simply copies the
-    # contents of this given sub-directory into the `/nix/store/` and adds that into the system
-    # paths so these file(s) are located under `/run/current-system/sw/share/zfs/compatibility.d/`
-    # where the ZFS utilities (as patched by NixOS) look for them.)
-    environment.systemPackages = [ "${./my-zfs-compatibility-feature-sets}" ];
+    # Add my custom "compatibility feature set" file(s) for ZFS into the system paths so these
+    # file(s) are located under `/run/current-system/sw/share/zfs/compatibility.d/`, along with
+    # the stock ones provided by OpenZFS by default that NixOS already automatically adds, in case
+    # anything ever looks for them there.
+    environment.systemPackages = [ myCompatibilityFeatureSets ];
   };
 }
