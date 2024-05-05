@@ -45,26 +45,58 @@ intended for rarely setting-up a new personal system only every few years or so
 
 2. Get this repository and its submodule in the live installer:
 
+   0. Change your working directory, in the live installer, to somewhere to
+      initially work on making changes to the repositories that will become the
+      primary ones under the `/etc/nixos/` of the installed system:
+      ```shell
+      cd $HOME  # Or /tmp, or wherever you want for this temporary work.
+      ```
+
    1. ```shell
       git clone --branch github --recurse-submodules \
           https://github.com/DerickEddington/nixos-config.git
       pushd nixos-config
       (cd users/dotfiles
-       git checkout github)  # Re-attach the HEAD.
+       git checkout main  # (Also attaches the HEAD of the submodule.)
+       git branch --delete --force github)
+      git checkout main
+      git branch --delete --force github
       ```
-   2. Optional: Reconfigure repositories to be independent/primary/authoritative
-      (not reference GitHub, not have an origin):
+      (This approach, of very briefly having the `github` branches at first and
+      then immediately checking-out the `main` branches, is needed due to how
+      the submodule's `url` is defined in the `main` branch.)
+
+   2. Recommended for long-term installations, but optional:  Reconfigure
+      these repositories to be independent/primary/authoritative (not reference
+      GitHub, not have an origin) because not having an `origin` affects some
+      Git operations and this better fits with the purpose of these repositories
+      that will be under `/etc/nixos/`:
+
       ```shell
-      pushd users/dotfiles
-      git checkout main
-      git branch --delete --force github
+      (cd users/dotfiles
+       git remote remove origin)
       git remote remove origin
-      popd
-      git checkout main
-      git branch --delete --force github
-      git remote remove origin
-      git submodule deinit users/dotfiles  # Temporary. Step 11 will re-init.
+      git submodule deinit users/dotfiles  # Temporary. It's saved. Step 11 will re-init.
       ```
+
+      Note for your future:  Instead of having an upstream `origin` for the
+      primary repositories under `/etc/nixos/`, it is recommended to clone from
+      those `/etc/nixos/` repositories to somewhere else that a non-`root` user
+      can work on developing them (e.g. in the same host, in a user's home).
+      These clones will have their `origin` be the respective repository under
+      `/etc/nixos/`, and they can have further remotes e.g. named `github` for
+      backing-up your repositories to GitHub.  The repositories under
+      `/etc/nixos/` can have those clones as remotes e.g. named `devel` (but
+      don't name them `origin`, to avoid Git's special handling of that).  This
+      separates and insulates the critical repositories under `/etc/nixos/`,
+      which helps protect them from accidents while making changes - so that
+      development work is done with non-`root` user(s) in clones where
+      work-in-progress accidents won't affect the primary active `/etc/nixos/`
+      ones, and so that deploying changes requires deliberately pulling from the
+      clones into the primaries.  Because you should decide how you want to
+      arrange this, instructional steps are not given by this guide.  You don't
+      need to do nor worry about it now, nor during this guide, and it can wait
+      until whenever you want.
 ---
 
 3. Adjust the `nixos-config/.new-installs/prepare-installation` script for your
@@ -293,11 +325,20 @@ intended for rarely setting-up a new personal system only every few years or so
          step 3.1).
       2. Change `users.users` elements to have the users you want, including
          those from your choice in step 3.6 (if any).
-      3. Change `system.stateVersion` to the NixOS release that you are installing.
+      3. **Change `system.stateVersion` to the NixOS release that you are
+         installing.**  This must be the same as the NixOS version of the
+         Installer that you chose in step 0, which is probably different than
+         the version in my file (which was from when I installed in the past)
+         and will probably be different than the example in the diff below
+         (which was from when I wrote this).  E.g. if you are reading this
+         within 6 months after 2099-06 then you probably chose NixOS release
+         version `99.05` and so should change it to that, but if for some reason
+         you chose an old, or an unstable future, version then change it to that
+         instead.
       4. Optional: Change anything else you want to be different from my
          choices.  (See the [NixOS documentation](https://nixos.org/learn.html),
-         especially [Part
-         II. Configuration](https://nixos.org/manual/nixos/stable/index.html#ch-configuration).)
+         especially [Part II. Configuration](
+         https://nixos.org/manual/nixos/stable/index.html#ch-configuration).)
 
    2. Adjust `zfs/default.nix`:
       ```shell
@@ -340,7 +381,7 @@ intended for rarely setting-up a new personal system only every few years or so
    ```diff
    --- a/configuration.nix
    +++ b/configuration.nix
-   @@ -8,7 +8,7 @@ in
+   @@ -9,7 +9,7 @@ in
 
     let
       # Choose for the particular host machine.
@@ -349,19 +390,29 @@ intended for rarely setting-up a new personal system only every few years or so
     in
     {
       imports = [
-   @@ -50,10 +50,10 @@ in
+   @@ -76,10 +76,10 @@ in
           boss = common // {
-            extraGroups = [ "wheel" "networkmanager" ];
+            extraGroups = [ "wheel" "networkmanager" "wireshark" ];
           };
    -      d = common // {
    +      me = common // {
-            extraGroups = [ "audio" ];
+            extraGroups = [ "audio" "scanner" "lp" ];
           };
    -      z = common;
    +      work = common;
           banking = common;
-          bills = common;
-        };
+          bills = common // {
+            extraGroups = [ "bills" ];
+   @@ -368,6 +368,6 @@ in
+        # this value at the release version of the first install of this system.
+        # Before changing this value read the documentation for this option
+        # (e.g. man configuration.nix or on https://nixos.org/nixos/options.html).
+   -    system.stateVersion = "21.05"; # Did you read the comment?
+   +    system.stateVersion = "23.11"; # Did you read the comment?
+      };
+    }
+   ```
+   ```diff
    --- a/zfs/default.nix
    +++ b/zfs/default.nix
    @@ -257,9 +257,9 @@ in
@@ -394,6 +445,8 @@ intended for rarely setting-up a new personal system only every few years or so
    +            { mountPoint = "/mnt/old-misc"; subDataset = "/old-misc"; }
                 { mountPoint = "/mnt/VMs"; subDataset = "/VMs"; }
               ])
+   ```
+   ```diff
    --- a/per-host/yoyo/default.nix
    +++ b/per-host/tester/default.nix
    @@ -31,12 +31,12 @@ in
@@ -584,16 +637,15 @@ intended for rarely setting-up a new personal system only every few years or so
     ```
 ---
 
-11. Optional: If you did optional step 2.2, re-initialize the
-    `/etc/nixos/users/dotfiles` submodule as independent:
+11. Recommended for long-term installations, but optional:  If you did optional
+    step 2.2, re-initialize the `/etc/nixos/users/dotfiles` submodule as
+    independent:
 
     ```shell
     (cd /etc/nixos
      sudo git submodule update --init  # `.git/modules` was already preserved.
      cd users/dotfiles
      sudo git checkout main)
-
-    USERS_DOTFILES_BRANCH=main
     ```
 
     (Disregard the following warning that occurs, since we want "authoritative
@@ -614,7 +666,18 @@ intended for rarely setting-up a new personal system only every few years or so
        ```shell
        sudo $EDITOR home.nix
        ```
-       1. Change `home.stateVersion` to the NixOS release that you are installing.
+       1. **Change `home.stateVersion` to the NixOS release that you are
+          installing.**  See step 5.1.3 for further comments about this.  E.g.:
+          ```diff
+          --- a/.config/home-manager/home.nix
+          +++ b/.config/home-manager/home.nix
+          @@ -96,5 +96,5 @@ in
+             # You can update Home Manager without changing this value. See
+             # the Home Manager release notes for a list of state version
+             # changes in each release.
+          -  home.stateVersion = "21.05";
+          +  home.stateVersion = "23.11";
+          ```
 
     1. Rename to your new host name:
        ```shell
@@ -622,11 +685,10 @@ intended for rarely setting-up a new personal system only every few years or so
        sudo git mv common/per-host/{yoyo,$HOSTNAME}
        ```
 
-    2. Adjust `common/per-host/`:
+    2. Adjust `common/per-host/` as desired:
        ```shell
        sudo $EDITOR common/per-host/$HOSTNAME/default.nix
        ```
-       1. Change `dpi` to the DPI of your monitor/screen/display.
 
     3. Optional: Change various aspects in the files under
        `.config/home-manager/` that are my choices which you might want to be
@@ -645,9 +707,7 @@ intended for rarely setting-up a new personal system only every few years or so
     pushd /etc/nixos/users/dotfiles
     ```
 
-    - At the top-level, there are some for various utilities.
-
-    - In `.emacs.d/`, there is my Emacs customization.
+    - At the top-level, and under `.config/`, there are some for various utilities.
 
     (Note that you can also make further changes later, tracked by Git, and pull
     them between users' repositories via the `main` branch of the
@@ -700,15 +760,13 @@ intended for rarely setting-up a new personal system only every few years or so
        ```
 
     2. Setup the `/etc/nixos/users/dotfiles` origin repository to be able to
-       pull changes from these users' other branch (`github` or `main`) of their
-       repositories (but not their `user/$USER` branch which might need to be
-       private):
+       pull changes from these users' `main` branch of their repositories (but
+       not their `user/$USER` branch which might need to be private):
        ```shell
        pushd /etc/nixos/users/dotfiles
        for U in ${DO_USERS[@]}; do
          if [ $U = root ]; then U_HOME=/root; else U_HOME=/home/$U; fi
-         sudo git remote add -t ${USERS_DOTFILES_BRANCH:-github} \
-                  user-$U $U_HOME/.dotfiles
+         sudo git remote add -t main user-$U $U_HOME/.dotfiles
        done
        sudo git fetch --all
        popd
@@ -776,19 +834,13 @@ intended for rarely setting-up a new personal system only every few years or so
     ```diff
     --- a/.config/home-manager/home.nix
     +++ b/.config/home-manager/home.nix
-    @@ -23,8 +23,15 @@ in
+    @@ -23,8 +23,9 @@ in
 
        # Packages available in per-user profile.
        home.packages = with pkgs; [
     +    rustup
        ];
 
-    +  # Override to use my GitHub identity, for this user.
-    +  programs.git = {
-    +    userName  = mkForce "Your Name";
-    +    userEmail = mkForce "1234567+YourName@users.noreply.github.com";
-    +  };
-    +
        # Extend the imported options.
        programs.firefox = {
          # profiles = {
