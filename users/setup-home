@@ -109,6 +109,6 @@ chmod -v og-rwx .
 
     nix-shell '<home-manager>' -A install
 
-    # # Dump its news now so it will be quiet about this after.
-    # home-manager news > /dev/null
+    # Dump its news now so it will be quiet about this after.
+    home-manager news > /dev/null
 }
