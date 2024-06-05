@@ -209,7 +209,16 @@ in
       git = {
         enable = true;
         config = {
-          safe.directory = ["/etc/nixos" "/etc/nixos/users/dotfiles"];
+          safe.directory = let
+            safeDirs = ["/etc/nixos" "/etc/nixos/users/dotfiles"];
+            # Only needed because newer Git versions changed `safe.directory` handling to be more
+            # strict or something.  Unsure if the consequence of now needing this was
+            # unintentional of them.  If it was unintentional, I suppose it's possible that future
+            # Git versions could fix to no longer need this.
+            safeDirsWithExplicitGitDir = (map (d: d + "/.git") safeDirs)
+                                         ++ ["/etc/nixos/.git/modules/users/dotfiles"];
+          in
+            safeDirs ++ safeDirsWithExplicitGitDir;
           transfer.credentialsInUrl = "die";
         };
       };

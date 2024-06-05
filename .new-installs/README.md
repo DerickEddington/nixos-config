@@ -767,6 +767,7 @@ intended for rarely setting-up a new personal system only every few years or so
        for U in ${DO_USERS[@]}; do
          if [ $U = root ]; then U_HOME=/root; else U_HOME=/home/$U; fi
          sudo git remote add -t main user-$U $U_HOME/.dotfiles
+         sudo git config --global --add safe.directory $U_HOME/.dotfiles
        done
        sudo git fetch --all
        popd
