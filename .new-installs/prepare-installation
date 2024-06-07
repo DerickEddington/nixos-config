@@ -302,7 +302,7 @@ function create-boot-pool
     # that references them.  (This is installed into the installee system
     # differently and automatically by my /etc/nixos/configuration.nix.)
     mkdir -p /etc/zfs/compatibility.d
-    ln -s -t /etc/zfs/compatibility.d/ \
+    ln -s -f -t /etc/zfs/compatibility.d/ \
        "$SELF_REPO"/zfs/my-zfs-compatibility-feature-sets/share/zfs/compatibility.d/*
 
     # Only features supported by GRUB2
