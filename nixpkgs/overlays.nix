@@ -34,33 +34,6 @@ in
   (self: super:
     { firefox = import ../firefox.nix self super; })
 
-  # Tuxedo-rs newer version than in stable channel.  Don't use unstable channel, so this is built
-  # with stable's Rust env and stdEnv, and so the version only changes when I want.
-  (let ver = "0.2.4";  # TODO: Periodically check if a newer version is released in the future.
-   in (self: super: {
-     tuxedo-rs =
-       assert (compareVersions super.tuxedo-rs.version ver) == -1;  # -1 means: older than.
-       super.tuxedo-rs.overrideAttrs (superPrevAttrs: rec {
-         version = ver;
-         src = superPrevAttrs.src.override {
-           rev = "388e5fc96c38412e3640759ba8a1a80dfff1218a";
-           hash = "sha256-5F9Xo+tnmYqmFiKrKMe+EEqypmG9iIvwai5yuKCm00Y=";
-         };
-         cargoDeps = superPrevAttrs.cargoDeps.overrideAttrs (depsPrevAttrs: {
-           inherit src;
-           name = replaceStrings [superPrevAttrs.version] [version] depsPrevAttrs.name;
-           outputHash = "sha256-4guYTjI3NmM/VsY6fbBTNOMqEykNh7opu4nMoihpziE=";
-         });
-       });
-     tailor-gui =
-       assert super.tailor-gui.version == self.tuxedo-rs.version;
-       super.tailor-gui.overrideAttrs (superPrevAttrs: rec {
-         cargoDeps = superPrevAttrs.cargoDeps.overrideAttrs (_depsPrevAttrs: {
-           outputHash = "sha256-Mr7gz8GDM+dzwjjIIs0L65ij1euOcC7baJdOzguVsz0=";
-         });
-       });
-   }))
-
   # Rust pre-built toolchains from official static.rust-lang.org.
   (self: super: let
     oxalica = import <oxalica-rust-overlay>;  # From channel that I added.
