@@ -188,17 +188,21 @@ in
   hardware.tuxedo-rs.enable = true;
   hardware.tuxedo-rs.tailor-gui.enable = is.GUI;
 
-  # Have dynamic CPU-frequency reduction based on load, to keep temperature and fan noise down
-  # when there's light load, but still allow high frequencies (limited by the separate choice of
-  # fan-speed-management-profile's curve's efficacy at removing heat) when there's heavy load.
-  # Other choices for this are: "schedutil" or "ondemand".  I choose "conservative" because it
-  # seems to not heat-up my CPUs as easily, e.g. when watching a video, which avoids turning-on
-  # the noisy fans, but it still allows the highest frequency when under sustained heavy load
-  # which is what I care about (i.e. I don't really care about the faster latency of "ondemand"
-  # nor the somewhat-faster latency of "schedutil").  Note: maximum performance is attained with
-  # the fans' speeds at the highest, which I have a different profile for in Tuxedo-rs's Tailor
-  # that I switch between as desired.
-  powerManagement.cpuFreqGovernor = "conservative";
+  # No longer needed since NixOS 24.05 has newer kernel version, and by default it uses the
+  # amd_pstate_epp CPUFreq driver with that's built-in "powersave" governor, and that has similar
+  # slower latency and highest frequency as the "conservative" governor, as desired.
+  #
+  # # Have dynamic CPU-frequency reduction based on load, to keep temperature and fan noise down
+  # # when there's light load, but still allow high frequencies (limited by the separate choice of
+  # # fan-speed-management-profile's curve's efficacy at removing heat) when there's heavy load.
+  # # Other choices for this are: "schedutil" or "ondemand".  I choose "conservative" because it
+  # # seems to not heat-up my CPUs as easily, e.g. when watching a video, which avoids turning-on
+  # # the noisy fans, but it still allows the highest frequency when under sustained heavy load
+  # # which is what I care about (i.e. I don't really care about the faster latency of "ondemand"
+  # # nor the somewhat-faster latency of "schedutil").  Note: maximum performance is attained with
+  # # the fans' speeds at the highest, which I have a different profile for in Tuxedo-rs's Tailor
+  # # that I switch between as desired.
+  # powerManagement.cpuFreqGovernor = "conservative";
 
   services.xserver = {
     exportConfiguration = true;
