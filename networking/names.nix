@@ -299,7 +299,7 @@ in
     services = {
       avahi = {
         # Enable nsswitch to resolve hostnames (e.g. *.local) via mDNS via Avahi.
-        nssmdns = true;
+        nssmdns4 = true;
         # Whether to publish aspects of our own host so they can be discovered by other hosts.
         publish = rec {
           enable = publish.hostAspects || publish.hostName;
@@ -328,6 +328,15 @@ in
           then "true"  # "true" enables responder also.
           else nonPublish;
       in {
+        # Empty to prevent using compiled-in fallback servers (which are Googstapo & Cloudfart),
+        # for privacy and because if my situation fails to provide DNS then I want that to be
+        # apparent.  I tested (with a link setup without DNS) that fallbacks are not used when
+        # this is set to empty, but are if it is not set.  The systemd man pages and internet
+        # search results are somewhat unclear about when exactly the fallbacks are used or not.
+        # So even after testing, I'm only 99% sure that "empty to prevent" can be depended on into
+        # the future.
+        fallbackDns = [];
+
         # See `man resolved.conf`.
         extraConfig =
           # services.resolved has an .llmnr attribute but not one for mDNS.  If it has that added
@@ -344,17 +353,6 @@ in
           # networking.networkmanager.connectionConfig options must also be
           # defined to achieve desired effects like consistently having
           # the same mDNS and LLMNR modes across global and per-link settings.
-
-          # Empty to prevent using compiled-in fallback servers (which are
-          # Googstapo & Cloudfart), for privacy and because if my situation
-          # fails to provide DNS then I want that to be apparent.  I tested
-          # (with a link setup without DNS) that fallbacks are not used when
-          # this is set to empty, but are if it is not set.  The systemd man
-          # pages and internet search results are somewhat unclear about when
-          # exactly the fallbacks are used or not.  So even after testing, I'm
-          # only 99% sure that "empty to prevent" can be depended on into the
-          # future.
-          FallbackDNS=
 
           # Enable using mDNS for things that do not go through Avahi
           # (e.g. things that directly use /etc/resolv.conf and bypass the

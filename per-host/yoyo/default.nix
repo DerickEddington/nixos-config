@@ -88,6 +88,12 @@ in
     ];
 
     zfs.requestEncryptionCredentials = false;  # Or could be a list of selected datasets.
+
+    # # To have classic ptrace permissions (instead of restricted, which is the new default).
+    # # Setting this to 0 enables ptracing non-child processes, e.g. attaching GDB to an existing
+    # # process, of a user's same UID.  The default value of 1 allows only child processes to be
+    # # ptrace'd, e.g. GDB must start a process so it's a child.
+    # kernel.sysctl."kernel.yama.ptrace_scope" = 0;
   };
 
   users.users = let
@@ -251,7 +257,7 @@ in
       # locates it at the same `/build/rustc-$VER-src/` path where its debug-info has it recorded
       # for binaries it builds, and because this seems to be the properly corresponding source.
       # TODO: is this true, or else where is its sysroot or whatever?
-      (rustc.overrideAttrs (origAttrs: {
+      (rustc.unwrapped.overrideAttrs (origAttrs: {
         # Only keep the `library` source directory, not the giant `src` (etc.) ones.  This greatly
         # reduces the size that is output to the `/nix/store`.  The `myDebugSupport_saveSrcPhase`
         # of `myLib.pkgWithDebuggingSupport` will run after ours and will only copy the

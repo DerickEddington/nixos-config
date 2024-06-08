@@ -1,3 +1,7 @@
+# TODO(nix-bug): The commented-out lines below marked w/ TODO(nix-bug) should be uncommented to be
+# reactivated in the future once the bug in the Nix evaluation of `assert` is fixed.  The bug
+# causes those asserts to always "fail" even when their expression's value is true.
+
 { pkgs, lib, ... }:
 
 let
@@ -72,7 +76,7 @@ rec {
                 outputs =
                   # I assume that "srcasused" is not an output name used by Nixpkgs and so I may
                   # use it myself.
-                  assert unusedOutput "srcasused";
+                  # TODO(nix-bug)  assert unusedOutput "srcasused";
                   if onlySrcOutput
                     # Have our custom output as the default (first).  Keep the original outputs
                     # because they can affect how a package's source is prepared
@@ -88,7 +92,7 @@ rec {
                 # packages are installed and these source files need to be linked from
                 # /run/current-system/sw/src/ or ~/.nix-profile/src/).
                 preConfigurePhases =
-                  assert unusedPhase "myDebugSupport_renameSourceRoot" "preConfigurePhases";
+                  # TODO(nix-bug)  assert unusedPhase "myDebugSupport_renameSourceRoot" "preConfigurePhases";
                   other.preConfigurePhases ++ ["myDebugSupport_renameSourceRoot"];
                 myDebugSupport_renameSourceRoot = let
                   isRebuilding = needAllPhases;
@@ -128,7 +132,7 @@ rec {
                 preBuildPhases =
                   # I assume that "myDebugSupport_saveSrcPhase" is not a phase name used by
                   # Nixpkgs and so I may use it myself.
-                  assert unusedPhase "myDebugSupport_saveSrcPhase" "preBuildPhases";
+                  # TODO(nix-bug)  assert unusedPhase "myDebugSupport_saveSrcPhase" "preBuildPhases";
                   other.preBuildPhases ++ ["myDebugSupport_saveSrcPhase"];
 
                 # The goal.  Copy the prepared source-code to our output.  Preserve its directory
@@ -169,7 +173,7 @@ rec {
                 postPhases =
                   # I assume that "myDebugSupport_makeOrigOutputsPhase" is not a phase name used
                   # by Nixpkgs and so I may use it myself.
-                  assert unusedPhase "myDebugSupport_makeOrigOutputsPhase" "postPhases";
+                  # TODO(nix-bug)  assert unusedPhase "myDebugSupport_makeOrigOutputsPhase" "postPhases";
                   ["myDebugSupport_makeOrigOutputsPhase"];
 
                 myDebugSupport_makeOrigOutputsPhase = ''

@@ -24,6 +24,7 @@ pkgs.hello.overrideAttrs
     assert ! origAttrs ? myHelloTest_renameSourceRoot;
     {
       pname = "my-hello-test";
+      meta.mainProgram = "my-hello-test";
       configureFlags = origConfigureFlags ++ configureFlags;
       preConfigurePhases = ["myHelloTest_renameSourceRoot"];
       myHelloTest_renameSourceRoot = ''

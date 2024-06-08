@@ -140,12 +140,10 @@ in
         autorun = true;
 
         # Configure keymap in X11
-        layout = "us";
-        xkbOptions = "ctrl:nocaps";
-
-        # Enable touchpad support (enabled default in most desktopManager).
-        libinput.enable = true;
-        libinput.touchpad.tapping = false;
+        xkb = {
+          layout = "us";
+          options = "ctrl:nocaps";
+        };
 
         desktopManager.mate.enable = true;
 
@@ -160,6 +158,12 @@ in
             };
           };
         };
+      };
+
+      # Enable touchpad support (enabled default in most desktopManager).
+      libinput = {
+        enable = true;
+        touchpad.tapping = false;
       };
 
       # Enable Avahi, for mDNS & DNS-SD, for local-network host & service
@@ -235,6 +239,18 @@ in
         enableBrowserSocket = true;  # Why not?
        #enableSSHSupport = true;  # Would only be for using GPG keys as SSH keys.
       };
+
+      screen = {
+        enable = true;
+        screenrc = ''
+          # These are usually redundant with my users' ~/.screenrc usually having the same.
+          # These are also here, as fallback in case a user doesn't have their own.
+          escape ^Jj
+          startup_message off
+          caption always "%w"
+          defscrollback 200000
+        '';
+      };
     };
 
     fonts = mkIf is.GUI {
@@ -307,7 +323,7 @@ in
         ripgrep
         unstable.fd
         file
-        screen
+      # screen  # Installed via above programs.screen.enable
         cifs-utils
         sshfs
         bind.dnsutils

@@ -215,7 +215,7 @@ for I in {1..8}; do
 done
 
 # Which channel to use as the needed "nixos-unstable" name.
-CHANNEL_NIXOS_UNSTABLE=https://nixos.org/channels/nixos-unstable
+CHANNEL_NIXOS_UNSTABLE=https://channels.nixos.org/nixos-unstable
 
 # The Oxalica Rust Overlay as a channel for the needed "oxalica-rust-overlay" name.
 CHANNEL_OXALICA_RUST_OVERLAY=https://github.com/oxalica/rust-overlay/archive/master.tar.gz
