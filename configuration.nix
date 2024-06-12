@@ -323,6 +323,7 @@ in
         ripgrep
         fd
         file
+        libtree
       # screen  # Installed via above programs.screen.enable
         cifs-utils
         sshfs
