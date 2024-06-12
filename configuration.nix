@@ -321,7 +321,7 @@ in
         unzip
         gnupg
         ripgrep
-        unstable.fd
+        fd
         file
       # screen  # Installed via above programs.screen.enable
         cifs-utils
