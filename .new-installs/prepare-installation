@@ -333,6 +333,7 @@ function create-main-pool
           ${POOL_PROPS_COMMON[@]} \
           -O canmount=off \
           -O mountpoint=none \
+          -O compression=off \
           -O dnodesize=auto \
           -O relatime=on \
           -O xattr=sa \
