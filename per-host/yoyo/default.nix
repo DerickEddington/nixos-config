@@ -96,6 +96,18 @@ in
     # kernel.sysctl."kernel.yama.ptrace_scope" = 0;
   };
 
+  security.pam.loginLimits = [ {
+    domain = "z";  # User `z`.
+    item = "nofile";
+    type = "hard";
+    value = "16777216";
+  } {
+    domain = "z";  # User `z`.
+    item = "nofile";
+    type = "soft";
+    value = "8192";
+  } ];
+
   users.users = let
     common = config.my.users.commonAttrs;
   in {
