@@ -107,6 +107,12 @@ chmod -v og-rwx .
 
     export NIX_PATH="$HOME/.nix-defexpr/channels${NIX_PATH:+:}$NIX_PATH"
 
+    # Ensure the state version that this Home Manager installation will be initialized with is the
+    # current latest.
+    STATE_VER_RE='home\.stateVersion *= *"[^"]+"'
+    STATE_VER_NEW="home.stateVersion = \"$NIXOS_RELEASE\""
+    sed -E -s -i -e "s/$STATE_VER_RE/$STATE_VER_NEW/" .config/home-manager/home.nix
+
     nix-shell '<home-manager>' -A install
 
     # Dump its news now so it will be quiet about this after.
