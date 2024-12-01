@@ -55,7 +55,7 @@ in
         seahorse.enable = is.GUI;
 
         git = {
-          package = pkgs.gitFull;  # Mostly to have `git-credential-libsecret`.
+          package = pkgs.git.override { withLibsecret = true; };
           config = {
             credential = {
               helper = "libsecret";  # My default. Users can override in their config.

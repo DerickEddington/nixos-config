@@ -27,4 +27,6 @@
       add-extra-dicts en_US-science.rws
     '';
   };
+
+  my.allowedUnfree = [ "aspell-dict-en-science" ];
 }

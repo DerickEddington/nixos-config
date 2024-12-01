@@ -63,21 +63,6 @@ in
       # efi.canTouchEfiVariables = false;
     };
 
-    # Not doing this anymore, because the latest kernel versions can cause problems due to being
-    # newer than what the other packages in the stable NixOS channel expect.  E.g. it caused trying
-    # to use a version of the VirtualBox extensions modules (or something) for the newer kernel but
-    # this was marked broken which prevented building the NixOS system.
-    #
-    # # Use the latest kernel version that is compatible with the used ZFS
-    # # version, instead of the default LTS one.
-    # kernelPackages = config.boot.zfs.package.latestCompatibleLinuxPackages;
-    # # Following https://nixos.wiki/wiki/Linux_kernel --
-    # # Note that if you deviate from the default kernel version, you should also
-    # # take extra care that extra kernel modules must match the same version. The
-    # # safest way to do this is to use config.boot.kernelPackages to select the
-    # # correct module set:
-    # extraModulePackages = with config.boot.kernelPackages; [ ];
-
     kernelParams = [
       "video=HDMI-A-1:3440x1440@100"  # Use 100 Hz, like xserver.
       "video=eDP-1:d"  # Disable internal lid screen.
@@ -186,16 +171,12 @@ in
 
   hardware.cpu.amd.updateMicrocode = true;
 
-  # Enable sound.
-  sound.enable = true;
-  hardware.pulseaudio.enable = true;
-
   # Bluetooth
   hardware.bluetooth.enable = true;
   services.blueman.enable = true;
 
   # Controls for Tuxedo Computers hardware that also work on my Clevo NH55EJQ.
-  hardware.tuxedo-keyboard.enable = true;  # Also enabled by the next below.
+  hardware.tuxedo-drivers.enable = true;  # Also enabled by the next below.
   # I use this for dynamic fan-speed adjusting based on CPU temperature.
   hardware.tuxedo-rs.enable = true;
   hardware.tuxedo-rs.tailor-gui.enable = is.GUI;

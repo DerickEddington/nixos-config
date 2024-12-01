@@ -4,7 +4,7 @@ let
   inherit (builtins) attrNames elem listToAttrs readFile substring;
   inherit (lib) getName mkDefault mkIf mkOption types;
   inherit (lib.lists) optionals;
-  inherit (lib.attrsets) cartesianProductOfSets filterAttrs;
+  inherit (lib.attrsets) cartesianProduct filterAttrs;
 in
 
 let
@@ -294,7 +294,7 @@ in
       # Reduced set of the Comix Cursors variants (don't want all of them).
       comixcursorsChosen =
         map ({color, hand}: pkgs.comixcursors."${hand}Opaque_${color}")
-          (cartesianProductOfSets {
+          (cartesianProduct {
             color = [ "Blue" "Green" "Orange" "Red" ];
             hand = [ "" "LH_" ];
           });
@@ -337,16 +337,16 @@ in
       (optionals is.MATE [
         libreoffice
         rhythmbox
-        transmission-gtk
+        transmission_4-gtk
         mate.mate-icon-theme-faenza
-        gnome.gucharmap gnome.gnome-characters
+        gucharmap gnome-characters
       ]) ++ [
         pop-icon-theme
         materia-theme
         material-icons
         material-design-icons
       ]) else [
-        transmission
+        transmission_4
       ]));
 
       variables = rec {
