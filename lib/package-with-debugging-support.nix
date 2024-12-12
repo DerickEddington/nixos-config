@@ -1,7 +1,7 @@
 { pkgs, lib, ... }:
 
 let
-  inherit (builtins) elem match mapAttrs;
+  inherit (builtins) elem match hasAttr mapAttrs;
   inherit (lib) optional;
   inherit (lib.attrsets) optionalAttrs;
   inherit (pkgs) enableDebugging;
@@ -54,9 +54,9 @@ rec {
                 postPhases         = origAttrs.postPhases or [];
               };
               unusedOutput = name:
-                !(elem name other.outputs) && !(origAttrs ? name);
+                !(elem name other.outputs) && !(hasAttr name origAttrs);
               unusedPhase = name: given:
-                !(elem name other.phases) && !(elem name other.${given}) && !(origAttrs ? name);
+                !(elem name other.phases) && !(elem name other.${given}) && !(hasAttr name origAttrs);
 
               namePrefixAttrs = optionalAttrs haveNamePrefix
                 (let
