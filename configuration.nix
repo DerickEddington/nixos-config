@@ -41,7 +41,7 @@ in
 
     my.hostName = hostName;
     my.allowedUnfree = [
-      "Oracle_VM_VirtualBox_Extension_Pack"
+      "Oracle_VirtualBox_Extension_Pack"
     ];
     my.secret-service.enable = true;  # Custom way of providing and using the Secret Service API.
 
