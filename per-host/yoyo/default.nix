@@ -96,15 +96,17 @@ in
   users.users = let
     common = config.my.users.commonAttrs;
   in {
-    # v = common // {  # No longer using. It's all backed-up.
-    #   extraGroups = [ "audio" ];
-    # };
+    v = common // {
+      extraGroups = [ "audio" ];
+    };
   };
 
   my.zfs.encryptedHomes = {
     noAuto = [
       "/home/v"
       "/home/v/old"
+      "/home/v/old/old"
+      { mountPoint = "/mnt/VMs/v";       subDataset = "/home/v/VMs"; }
       { mountPoint = "/mnt/omit/home/v"; subDataset = "/home/v/omit"; }
     ];
   };
