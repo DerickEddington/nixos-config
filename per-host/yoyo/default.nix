@@ -112,6 +112,7 @@ in
       "/home/v"
       "/home/v/old"
       "/home/v/old/old"
+      "/home/v/work"
       { mountPoint = "/mnt/VMs/v";       subDataset = "/home/v/VMs"; }
       { mountPoint = "/mnt/omit/home/v"; subDataset = "/home/v/omit"; }
     ];
@@ -153,6 +154,17 @@ in
       # allowedTCPPorts = [ 22 ];
       # allowedUDPPorts = [ ... ];
     };
+  };
+
+  # Just have the NFS server without static exports, for my ZFS datasets with the `sharenfs`
+  # property enabled that do dynamic exports, to share only with my personal VMs on my host-only
+  # network.
+  services.nfs.server.enable = true;
+  networking.firewall.interfaces."vboxnet0" = rec {
+    allowedTCPPorts =
+      let nfs = 2049; portmapper = 111; mountd = 20048;
+      in [ nfs portmapper mountd ];  # (FreeBSD or Solaris as client needs all these.)
+    allowedUDPPorts = allowedTCPPorts;  # (Solaris mount-at-boot needs UDP.)
   };
 
   # This only reflects the DNS servers that are configured elsewhere (e.g. by DHCP).
