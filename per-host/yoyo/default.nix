@@ -3,7 +3,7 @@
 { config, pkgs, lib, is, ... }:
 
 let
-  inherit (builtins) elem pathExists;
+  inherit (builtins) concatMap elem pathExists;
   inherit (lib) mkIf;
   inherit (lib.lists) optional;
   inherit (lib.strings) optionalString;
@@ -81,17 +81,23 @@ in
     # kernel.sysctl."kernel.yama.ptrace_scope" = 0;
   };
 
-  security.pam.loginLimits = [ {
-    domain = "z";  # User `z`.
-    item = "nofile";
-    type = "hard";
-    value = "16777216";
-  } {
-    domain = "z";  # User `z`.
-    item = "nofile";
-    type = "soft";
-    value = "8192";
-  } ];
+  security.pam.loginLimits = let
+    allowMoreFDs = userName: let
+      domain = { domain = userName; };
+      limit = { item = "nofile"; } // domain;
+    in
+      map (value: limit // value) [ {
+        type = "hard";
+        value = "16777216";
+      } {
+        type = "soft";
+        value = "8192";
+      } ];
+  in
+    concatMap allowMoreFDs [
+      "v"
+      "z"
+    ];
 
   users.users = let
     common = config.my.users.commonAttrs;
