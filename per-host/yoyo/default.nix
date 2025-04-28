@@ -292,6 +292,7 @@ in
   nix = {
     daemonCPUSchedPolicy = "idle"; daemonIOSchedClass = "idle";  # So builds defer to my tasks.
     settings = {
+      download-buffer-size = 2 * (64 * 1024 * 1024);
       extra-experimental-features = "nix-command";
     };
   };
