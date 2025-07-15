@@ -373,6 +373,9 @@ in
         headless = ! is.GUI;
       };
     };
+    # See: https://github.com/NixOS/nixpkgs/issues/363887
+    boot.kernelParams = mkIf is.desiredVirtualizationIncompatibleWithKVM
+                          [ "kvm.enable_virt_at_load=0" ];
 
     nix = {
       settings.auto-optimise-store = true;

@@ -9,6 +9,7 @@
     is = let
       X = config.services.xserver;
       D = X.desktopManager;
+      virtualbox = config.virtualisation.virtualbox;
     in rec {
       X11 = X.enable;
      #wayland = ;  # TODO: Not sure how nor how much NixOS supports.
@@ -20,6 +21,11 @@
       # Could add others above, as needed, like: LXQt, etc.
       GTK = GNOME || MATE || XFCE;  # Maintenance: Extend as appropriate when others added above.
       desktop = GNOME || KDE || MATE || XFCE;  # Maintenance: Ditto.
+
+      desiredVirtualizationIncompatibleWithKVM =
+           (virtualbox.host.enable && !virtualbox.host.enableKvm)
+      # || Could add others, like: `virtualisation.vmware.host.enable`, etc.
+      ;
     };
   };
 }
