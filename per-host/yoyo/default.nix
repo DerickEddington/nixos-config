@@ -133,18 +133,29 @@ in
   };
 
   networking = {
+    networkmanager = {
+      plugins = with pkgs; [
+        networkmanager-fortisslvpn
+      # networkmanager-iodine
+      # networkmanager-l2tp
+        networkmanager-openconnect
+      # networkmanager-openvpn
+      # networkmanager-sstp
+      # networkmanager-strongswan
+      # networkmanager-vpnc
+      ];
+
     # # TODO: Might be needed to work with my router's MAC filter.  Though, the
     # # default of macAddress="preserve" might work once it has connected once
     # # (with the MAC filter disabled temporarily), and the default
     # # scanRandMacAddress=true might be ok since it sounds like it only affects
     # # scanning but not "preserve"d MAC address of previously-connected
     # # connections.
-    # networkmanager = {
     #   wifi = {
     #     scanRandMacAddress = false;
     #     macAddress = "permanent";
     #   };
-    # };
+    };
 
     firewall = {
       logRefusedConnections = true;

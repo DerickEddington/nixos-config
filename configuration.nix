@@ -189,6 +189,8 @@ in
 
       # Enable CUPS to print documents.
       printing.enable = mkDefault is.GUI;  # Note: Could be changed elsewhere, if desired.
+
+      gnome.gcr-ssh-agent.enable = mkIf is.MATE false;  # Want `programs.ssh.startAgent`.
     };
 
     # Some programs need SUID wrappers, can be configured further, or are
@@ -203,11 +205,13 @@ in
         # Have `ssh-agent` be already available for users which want to use it.  No harm in
         # starting it for users which don't use it (as long as their apps & tools are not
         # configured to accidentally use it unintentionally, but that's their choice).
-        startAgent = true;
+        # Not for other DEs that I believe provide their own SSH agent.
+        startAgent = !(is.GNOME || is.KDE);
         # This is better than the other choices, because: it "grabs" the desktop (unlike GNOME's
         # Seahorse's which has some error when it tries to do that); and it doesn't depend on
         # other things (unlike KDE's ksshaskpass which depends on KWallet).
-        askPassword = mkIf is.GUI "${pkgs.ssh-askpass-fullscreen}/bin/ssh-askpass-fullscreen";
+        askPassword = mkIf (is.GUI && config.programs.ssh.startAgent)
+          "${pkgs.ssh-askpass-fullscreen}/bin/ssh-askpass-fullscreen";
       };
 
       git = {
@@ -251,12 +255,14 @@ in
           defscrollback 200000
         '';
       };
+
+      command-not-found.enable = true;
     };
 
     fonts = mkIf is.GUI {
       enableDefaultPackages = true;
       packages = with pkgs; [
-        ubuntu_font_family
+        ubuntu-classic
       ];
     };
 

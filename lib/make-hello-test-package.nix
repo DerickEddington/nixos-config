@@ -9,7 +9,7 @@ in
 pkgs:
 
 let
-  configureFlags = [
+  extraConfigureFlags = [
     "--program-transform-name=s/hello/my-hello-test/"
     "--disable-nls"
   ];
@@ -19,17 +19,14 @@ pkgs.hello.overrideAttrs
   (origAttrs: let
     origConfigureFlags = origAttrs.configureFlags or [];
   in
-    assert isDisjoint configureFlags origConfigureFlags;
-    assert ! origAttrs ? preConfigurePhases;
-    assert ! origAttrs ? myHelloTest_renameSourceRoot;
-    {
+    assert isDisjoint extraConfigureFlags origConfigureFlags;
+    rec {
       pname = "my-hello-test";
       meta.mainProgram = "my-hello-test";
-      configureFlags = origConfigureFlags ++ configureFlags;
-      preConfigurePhases = ["myHelloTest_renameSourceRoot"];
-      myHelloTest_renameSourceRoot = ''
-        mv -v ../"$sourceRoot" ../"''${sourceRoot/hello/my-hello-test}"
-        export sourceRoot="''${sourceRoot/hello/my-hello-test}"
+      unpackCmd = ''
+        _defaultUnpack "$curSrc"
+        mv -v {${origAttrs.pname},${pname}}-${origAttrs.version}
       '';
+      configureFlags = origConfigureFlags ++ extraConfigureFlags;
       doCheck = false;  # Its tests assume its program name is not transformed.
     })
