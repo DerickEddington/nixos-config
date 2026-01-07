@@ -328,9 +328,9 @@ in
 
     services.udev.extraRules = concatStringsSep "\n"
       (map ({ id, owner }:
-            ''KERNEL=="zd*" SUBSYSTEM=="block" ACTION=="add|change" '' +
-            ''PROGRAM="/run/current-system/sw/lib/udev/zvol_id /dev/%k" '' +
-            ''RESULT=="${pools.main.name}/VMs/blkdev/${id}" '' +
+            ''KERNEL=="zd*", SUBSYSTEM=="block", ACTION=="add|change", '' +
+            ''PROGRAM="/run/current-system/sw/lib/udev/zvol_id /dev/%k", '' +
+            ''RESULT=="${pools.main.name}/VMs/blkdev/${id}", '' +
             ''OWNER="${owner}"'')
         usersZvolsForVMs);
 
