@@ -110,8 +110,7 @@ in
   my.zfs.encryptedHomes = {
     noAuto = [
       "/home/v"
-      "/home/v/old"
-      "/home/v/old/old"
+      "/home/v/artifacts"
       "/home/v/work"
       { mountPoint = "/mnt/VMs/v";       subDataset = "/home/v/VMs"; }
       { mountPoint = "/mnt/omit/home/v"; subDataset = "/home/v/omit"; }
