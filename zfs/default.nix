@@ -331,8 +331,15 @@ in
             ''KERNEL=="zd*", SUBSYSTEM=="block", ACTION=="add|change", '' +
             ''PROGRAM="/run/current-system/sw/lib/udev/zvol_id /dev/%k", '' +
             ''RESULT=="${pools.main.name}/VMs/blkdev/${id}", '' +
-            ''OWNER="${owner}"'')
+            # Have per-user group ownership, because newer udev prohibits setting OWNER to a user
+            # that isn't a system user (and would just ignore such).
+            ''GROUP="${owner}"'')
         usersZvolsForVMs);
+
+    # Ensure the per-user groups exist, as needed for our udev rule above.
+    users.groups = listToAttrs
+      (map (owner: { name = owner; value = { members = [ owner ]; }; })
+        (unique (map ({ id, owner }: owner) usersZvolsForVMs)));
 
     # Add my custom "compatibility feature set" file(s) for ZFS into the system paths so these
     # file(s) are located under `/run/current-system/sw/share/zfs/compatibility.d/`, along with
