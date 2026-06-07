@@ -18,6 +18,7 @@ in
   # Docker run by non-root users.  When enabled, each user runs their own daemon that stores under
   # the user's home.  Not enabled here (default is disabled).
   virtualisation.docker.rootless = {
+    package = pkgs.docker_29;
     setSocketVariable = true;
     daemon.settings = {
       # Works on top of any FS, but is inefficient.
