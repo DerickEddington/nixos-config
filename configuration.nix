@@ -41,7 +41,7 @@ in
 
     my.hostName = hostName;
     my.allowedUnfree = [
-      "Oracle_VirtualBox_Extension_Pack"
+      "virtualbox-extpack"
     ];
     my.secret-service.enable = true;  # Custom way of providing and using the Secret Service API.
 
@@ -132,6 +132,23 @@ in
 
     security.pki.caCertificateBlacklist = [
     ];
+
+    # Until fix for https://github.com/mate-desktop/mate-power-manager/issues/411 is deployed.
+    security.polkit = {
+      extraConfig = let
+        mate-power-backlight-helper = "mate-power-backlight-helper";
+      in mkIf is.MATE ''
+          polkit.addRule(function(action, subject) {
+              if (    action.id == "org.freedesktop.policykit.exec"
+                   && action.lookup("program").endsWith("${mate-power-backlight-helper}"))
+              {
+                //polkit.log("Ignored a mate-power-backlight-helper, for user " + subject.user);
+                  return polkit.Result.NO;  // Silently reject attempt to run it.
+              }
+          });
+      '';
+     #debug = true;
+    };
 
     services = {
       # Enable the X11 windowing system.
@@ -336,7 +353,7 @@ in
         bind.dnsutils
         pwgen
         socat
-        xorg.lndir  # (Independent of Xorg being installed (I think).)
+        lndir  # (Independent of Xorg being installed (I think).)
         hello  # Can be useful to test debugging.
       ]
       ++ (if is.GUI then (
@@ -344,7 +361,7 @@ in
         libreoffice
         rhythmbox
         transmission_4-gtk
-        mate.mate-icon-theme-faenza
+        mate-icon-theme-faenza
         gucharmap gnome-characters
       ]) ++ [
         pop-icon-theme
@@ -370,7 +387,7 @@ in
       };
     };
 
-    documentation.man.generateCaches = true;
+    documentation.man.cache.enable = true;
 
     virtualisation.virtualbox = {
       host = {

@@ -241,12 +241,6 @@ in
                     in v == resolve || v == no)));
       message =
         "Should not have both NetworkManager per-connection and Avahi mDNS responding.";
-    } {
-      # Prevent repeat forms in `resolved` config file.
-      assertion = (resolved.fallbackDns != [])
-                  -> !(matchResolvedConfOption resolved.extraConfig "FallbackDNS" "[^\n]*");
-      message =
-        "Cannot have both resolved.fallbackDns and FallbackDNS in resolved.extraConfig";
     }];
 
     my = {
@@ -320,12 +314,20 @@ in
         # };
       };
 
-      resolved = let
+      # See `man resolved.conf`.
+      # Note that these are only the global settings, and that some per-link
+      # settings can override these.  NetworkManager has its own settings
+      # system that it will use for determining the systemd-resolved
+      # settings per-link, and so the
+      # networking.networkmanager.connectionConfig options must also be
+      # defined to achieve desired effects like consistently having
+      # the same mDNS and LLMNR modes across global and per-link settings.
+      resolved.settings.Resolve = let
         nonPublish =
-          if nameResolv.multicast then "resolve" else "false";
+          if nameResolv.multicast then "resolve" else false;
         multicastMode =
           if (publish.hostName && nameResolv.multicast)
-          then "true"  # "true" enables responder also.
+          then true  # enables responder also.
           else nonPublish;
       in {
         # Empty to prevent using compiled-in fallback servers (which are Googstapo & Cloudfart),
@@ -335,48 +337,30 @@ in
         # search results are somewhat unclear about when exactly the fallbacks are used or not.
         # So even after testing, I'm only 99% sure that "empty to prevent" can be depended on into
         # the future.
-        fallbackDns = [];
+        FallbackDNS = "";
 
-        # See `man resolved.conf`.
-        extraConfig =
-          # services.resolved has an .llmnr attribute but not one for mDNS.  If it has that added
-          # in the future, we try to detect that so we would know to change to use that instead of
-          # having MulticastDNS= here in extraConfig.
-          assert all (a: !(hasAttr a resolved))
-            ["mdns" "mDNS" "mDns" "MulticastDNS" "MulticastDns" "multicastDNS" "multicastDns"];
-          ''
-          # My services.resolved.extraConfig:
-          # Note that these are only the global settings, and that some per-link
-          # settings can override these.  NetworkManager has its own settings
-          # system that it will use for determining the systemd-resolved
-          # settings per-link, and so the
-          # networking.networkmanager.connectionConfig options must also be
-          # defined to achieve desired effects like consistently having
-          # the same mDNS and LLMNR modes across global and per-link settings.
+        # Enable using mDNS for things that do not go through Avahi
+        # (e.g. things that directly use /etc/resolv.conf and bypass the
+        # Name Service Switch (NSS)), even with Avahi enabled (which can also
+        # resolve mDNS).
+        MulticastDNS = if canResolvedBeMDNSresponder then multicastMode else nonPublish;
 
-          # Enable using mDNS for things that do not go through Avahi
-          # (e.g. things that directly use /etc/resolv.conf and bypass the
-          # Name Service Switch (NSS)), even with Avahi enabled (which can also
-          # resolve mDNS).
-          MulticastDNS=${if canResolvedBeMDNSresponder then multicastMode else nonPublish}
+        # Might be desired in rare situations where the upstream classic
+        # unicast DNS is e.g. a home router that provides some DNS but without
+        # providing its own domain for searching, and where some single-label
+        # name(s) are not resolvable via other "zero-config" (LLMNR)
+        # responders.
+        # ResolveUnicastSingleLabel = true;
 
-          # Might be desired in rare situations where the upstream classic
-          # unicast DNS is e.g. a home router that provides some DNS but without
-          # providing its own domain for searching, and where some single-label
-          # name(s) are not resolvable via other "zero-config" (LLMNR)
-          # responders.
-          # ResolveUnicastSingleLabel=true
-
-        '' + (optionalString (resolvedExtraListener != null) ''
+        DNSStubListenerExtra = mkIf (resolvedExtraListener != null)
           # Make systemd-resolved listen on this additional address.
           # Especially useful for enabling Docker containers to use the host's
           # systemd-resolved (in conjunction with
           # `virtualisation.docker.rootless.dns`).
-          DNSStubListenerExtra=${resolvedExtraListener}
-        '');
+          resolvedExtraListener;
 
         # Enable Link-Local Multicast Name Resolution (LLMNR).
-        llmnr = multicastMode;  # (Avahi can't do LLMNR, so simpler.)
+        LLMNR = multicastMode;  # (Avahi can't do LLMNR, so simpler.)
 
         # Enable DNSSEC validation done locally.  Note that for private domains
         # (a.k.a. "site-private DNS zones") to not "conflict with DNSSEC operation" (i.e. not have
@@ -385,7 +369,7 @@ in
         # the private domains to turn off DNSSEC validation.  There is a built-in pre-defined set
         # of these, including .home. and .test. which I use.  This default may be overridden in
         # ./per-host/${hostName} when needed.
-        dnssec = mkDefault "true";
+        DNSSEC = mkDefault true;
       };
     };
   }

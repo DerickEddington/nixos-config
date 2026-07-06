@@ -190,7 +190,7 @@ in
   # If in a situation where an upstream DNS server does not support DNSSEC
   # (i.e. cannot even proxy DNSSEC-format datagrams), this could be defined so
   # that DNS should still work.
-  # services.resolved.dnssec = "allow-downgrade";  # Or "false".
+  # services.resolved.settings.Resolve.DNSSEC = "allow-downgrade";  # Or "false".
 
   # services.openssh.enable = true;
   # my.intended.netPorts.TCP = [22];
@@ -278,24 +278,25 @@ in
   my.debugging.support = {
     all.enable = true;
     sourceCode.of.prebuilt.packages = with pkgs; [
-      # TODO: Unsure if this is the proper way to achieve this for having the Rust library source
-      # that corresponds to binaries built by Nixpkgs' `rustc`.
-      # Have the Rust standard library source.  Get it from this `rustc` package, because it
-      # locates it at the same `/build/rustc-$VER-src/` path where its debug-info has it recorded
-      # for binaries it builds, and because this seems to be the properly corresponding source.
-      # TODO: is this true, or else where is its sysroot or whatever?
-      (rustc.unwrapped.overrideAttrs (origAttrs: {
-        # Only keep the `library` source directory, not the giant `src` (etc.) ones.  This greatly
-        # reduces the size that is output to the `/nix/store`.  The `myDebugSupport_saveSrcPhase`
-        # of `myLib.pkgWithDebuggingSupport` will run after ours and will only copy the
-        # `$sourceRoot` as it'll see it as changed by us here.  If debugging of `rustc` itself is
-        # ever desired, this could be removed so that its sources are also included (I think).
-        preBuildPhases = ["myDebugSupport_rust_onlyLibraryDir"];
-        myDebugSupport_rust_onlyLibraryDir = ''
-          export sourceRoot+=/library
-          pushd "$NIX_BUILD_TOP/$sourceRoot"
-        '';
-      }))
+      # # TODO: Figure-out what to do about this being broken now. Hopefully can fix.
+      # # TODO: Unsure if this is the proper way to achieve this for having the Rust library source
+      # # that corresponds to binaries built by Nixpkgs' `rustc`.
+      # # Have the Rust standard library source.  Get it from this `rustc` package, because it
+      # # locates it at the same `/build/rustc-$VER-src/` path where its debug-info has it recorded
+      # # for binaries it builds, and because this seems to be the properly corresponding source.
+      # # TODO: is this true, or else where is its sysroot or whatever?
+      # (rustc.unwrapped.overrideAttrs (origAttrs: {
+      #   # Only keep the `library` source directory, not the giant `src` (etc.) ones.  This greatly
+      #   # reduces the size that is output to the `/nix/store`.  The `myDebugSupport_saveSrcPhase`
+      #   # of `myLib.pkgWithDebuggingSupport` will run after ours and will only copy the
+      #   # `$sourceRoot` as it'll see it as changed by us here.  If debugging of `rustc` itself is
+      #   # ever desired, this could be removed so that its sources are also included (I think).
+      #   preBuildPhases = ["myDebugSupport_rust_onlyLibraryDir"];
+      #   myDebugSupport_rust_onlyLibraryDir = ''
+      #     export sourceRoot+=/library
+      #     pushd "$NIX_BUILD_TOP/$sourceRoot"
+      #   '';
+      # }))
     ];
   };
 

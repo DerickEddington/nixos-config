@@ -172,7 +172,13 @@ in
 
     boot = {
       supportedFilesystems = [ "zfs" ];
-      zfs.devNodes = "/dev/disk/by-id";
+      zfs = {
+        devNodes = "/dev/disk/by-id";
+        # "Highly recommended" by NixOS doc to disable this.
+        # If import fails after unclean shutdown, boot with the `zfs_force=1` option as a kernel
+        # parameter (by manually editing the kernel params via bootloader).
+        forceImportRoot = false;  # The default from NixOS 26.11 on.
+      };
 
       loader = {
         grub = {
